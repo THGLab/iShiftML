@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # iShiftML: Highly Accurate Prediction of NMR Chemical Shifts from Low-Level Quantum Mechanics Calculations Using Machine Learning
 
 ## Authors 
@@ -121,3 +122,6 @@ your work is reviewed by at least one other contributor.
 - The documentation of the modules are available at most cases. Please look up local classes or functions and consult with the docstrings in the code.
 
 
+=======
+Machine Learning of Hydrogen Combustion Reaction. 
+>>>>>>> 2f2b952 (initiated readme)
