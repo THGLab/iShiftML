@@ -95,9 +95,9 @@ class TEV_generator:
         self.tensor_eigen = TensorEigen(atom_types=atom_types)
 
     def generate_TEVs(self, low_level_df_orca):
-        coordinates = np.array(one_mol[['x', 'y', 'z']].values)
-        tensors = np.array(one_mol[orca_tensor_columns].values)
-        atom_list = np.array(one_mol['atom_symbol'].values)
+        coordinates = np.array(low_level_df_orca[['x', 'y', 'z']].values)
+        tensors = np.array(low_level_df_orca[orca_tensor_columns].values)
+        atom_list = np.array(low_level_df_orca['atom_symbol'].values)
         # convert atom_list to atom type
         atom_list = [atom_types[atom] for atom in atom_list]
         tensor_eigen_vals, tensor_eigen_vecs = self.tensor_eigen.calculate_tensor_vecs(tensors)
