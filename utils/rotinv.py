@@ -65,10 +65,15 @@ class TEVCalculator:
             TEVs[i, 0] = trace_DIA
             TEVs[i, self.dim_1tensor] = trace_PARA
             # normalize
-            DIA = DIA / trace_DIA
-            PARA = PARA / trace_PARA
+            if trace_DIA < 1e-2:
+                trace_DIA = 0.0
+            else:
+                DIA = DIA / trace_DIA
+            if trace_PARA < 1e-2:
+                trace_PARA = 0.0
+            else:
+                PARA = PARA / trace_PARA
 
-            
             #generate j list that belongs to allowed atom types and not equal to i
             j_list = [j for j in range(num_atoms) if atom_list[j] in self.atom_types and j != i]
             jk_combinations = itertools.combinations_with_replacement(j_list, 2)
