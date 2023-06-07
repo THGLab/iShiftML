@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
-import math
+import pandas as pd
 import itertools
 
 pi_over_4 = np.pi / 4
@@ -8,78 +8,89 @@ class TEVCalculator:
     '''
     Calculate the Tensor Environment Variables of a molecule, just like AEVs
     Need coordinates, atom_list, tensor_vecs 
-    Each nuclear has 6 NMR eigen vectors, 3 for paramagnetic and 3 for diamagnetic
-    We embed the each eigen vectors into a 4 (number of nuclei) * 8 (number of theta) *4 (number of R_n) dimensional vector
+    We embed the each eigen vectors into a 4 (number of nuclei) * 4 (number of nuclei) dimensional vector
+    We utilize the following facts:
+    r' = R r, R is a rotation matrix, r is the original coordinates
+    T' = R T R^T, R is a rotation matrix, T is the NMR shielding tensor
+    Then r'^T T' r' = r^T R^T R T R^T R r = r^T T r
     '''
-    def __init__(self, atom_types = [1, 6, 7, 8] , R_C =3.5, eta=16, xi=32, theta_m_values = np.array([(2*m+1)/16*np.pi for m in range(8)]), R_n_values = np.array([0.90, 1.55, 2.20, 2.85])):
+    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2):
         self.R_C =R_C
-        self.eta = eta
-        self.xi = xi
-        self.theta_m_values = theta_m_values
-        self.R_n_values =R_n_values
+        # self.eta = eta
+        # self.xi = xi
+        # self.theta_m_values = theta_m_values
+        # self.R_n_values = R_n_values
         self.atom_types = atom_types # H, C, N, O
-        self.dim = len(atom_types) * len(theta_m_values) * len(R_n_values) 
+        self.dim_1tensor = len(atom_types) * len(atom_types) + 1
+        self.dim = self.dim_1tensor * 2
+        self.atom_dict = {value: index for index, value in enumerate(atom_types)}
 
     def cutoff_function(self, R):
-        if R <= self.R_C:
-            return (1 + np.cos(np.pi * R / self.R_C)) / 2
-        else:
-            return 0
+        return np.where(R <= self.R_C, (1 + np.cos(np.pi * R / self.R_C)) / 2, 0)
 
-    def calculate_angular_AEVs(self, coordinates, atom_list, tensor_vecs):
+        
+
+    def calculate_TEVs(self, coordinates, atom_list, tensors):
         num_atoms = len(atom_list)
-        TEVs = np.zeros((num_atoms, 6, self.dim))
+        TEVs = np.zeros((num_atoms, self.dim))
+        atom_type_list = [self.atom_dict[atom] for atom in atom_list]
+        # print(atom_type_list)
 
         # Calculate TEVs
         for i in range(num_atoms):
-            for idxa, a in enumerate(self.atom_types):
-                atom_indices = [j for j in range(num_atoms) if atom_list[j] == a and j != i]
-                # print(atom_indices)
-                for j in atom_indices:
-                    R_ij = LA.norm(coordinates[i] - coordinates[j])
-                    # print("R_ij", R_ij)
-                    for k in range(6):
-                        dot = np.dot(coordinates[j] - coordinates[i], tensor_vecs[i,k])
-                        theta_jik = np.arccos(np.abs(dot) / R_ij )
-                        for n in range(4):
-                            factor_from_R_ij = np.exp(-self.eta * (R_ij - self.R_n_values[n])**2) * self.cutoff_function(R_ij)
-                            for m in range(8):
-                                    # print(i, k, a, idxa*32 + m*4 + n, theta_jik, (1 + np.cos(theta_jik - self.theta_m_values[m]))**self.xi * factor_from_R_ij)
-                                    TEVs[i, k, idxa*32 + m*4 + n] +=  (1 + np.cos(theta_jik - self.theta_m_values[m]))**self.xi * factor_from_R_ij
-                                    TEVs[i, k, idxa*32 + m*4 + n] +=  (1 + np.cos(theta_jik + pi_over_4 - self.theta_m_values[m]))**self.xi * factor_from_R_ij
 
-        # 2**(1-self.xi) is a normalization factor. multiply it to all elements in TEVs
-        TEVs *= 2**(1-self.xi)
+            # TEV[i, a, b] = sum_{j in a} sum_{k in b} r_ji^T * PARA (or DIA) * r_ki_function(R_ji)_function(R_ki)
+            #first to get all r_ji and R_ji to save time
+            r_ji_list = coordinates - coordinates[i]
+            # print(r_ji_list)
+
+            # Normalize r_ji
+            R_ji_list  = LA.norm(r_ji_list , axis=1)
+            R_ji_list[i] = np.inf # set diagonal elements to inf
+            r_ji_list = r_ji_list / R_ji_list[:, None]
+
+            # Multiply r_ji_list by cutoff function
+            R_ji_list[i] = 0 # set diagonal elements to 0
+            R_ji_list = self.cutoff_function(R_ji_list)
+            r_ji_list = r_ji_list * R_ji_list[:, None]
+            # print(r_ji_list)
+            # print(R_ji_list)
+
+            # extract PARA and DIA
+            DIA = tensors[i, :9].reshape((3,3))
+            PARA = tensors[i, 9:].reshape((3,3))
+            # extract trace of DIA and PARA, put into TEVs 
+            trace_DIA = np.trace(DIA)
+            trace_PARA = np.trace(PARA)
+            TEVs[i, 0] = trace_DIA
+            TEVs[i, self.dim_1tensor] = trace_PARA
+            # normalize
+            DIA = DIA / trace_DIA
+            PARA = PARA / trace_PARA
+
+            
+            #generate j list that belongs to allowed atom types and not equal to i
+            j_list = [j for j in range(num_atoms) if atom_list[j] in self.atom_types and j != i]
+            jk_combinations = itertools.combinations_with_replacement(j_list, 2)
+            for j, k in jk_combinations:
+                # extract r_ji and r_ki
+                r_ji = r_ji_list[j]
+                r_ki = r_ji_list[k]
+
+                # calculate index of TEVs, offset by 1 due to the trace
+                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + 1
+                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + 1
+                # calculate r_ji^T * DIA * r_ki
+                TEVs[i, index_jk] += np.dot(np.dot(r_ji, DIA), r_ki)
+                TEVs[i, index_kj] += np.dot(np.dot(r_ki, DIA), r_ji)
+                # calculate r_ji^T * PARA * r_ki
+                TEVs[i, self.dim_1tensor + index_jk] += np.dot(np.dot(r_ji, PARA), r_ki)
+                TEVs[i, self.dim_1tensor + index_kj] += np.dot(np.dot(r_ki, PARA), r_ji)
+
+                # print(j ,k, index_jk, index_kj,TEVs[i, index_jk], TEVs[i, index_kj], TEVs[i, self.dim_1tensor + index_jk], TEVs[i, self.dim_1tensor + index_kj])
+
         return TEVs
 
-
-class TensorEigen:
-    '''
-    Calculate the 6 NMR eigen vectors of each nuclear
-    '''
-    def __init__(self, atom_types = [1, 6, 7, 8]):
-        self.atom_types = atom_types  # H, C, N, O
-        self.dim = 6
-    
-    def eigens(self, array_1d):
-        array = array_1d.reshape((3,3))
-        w, v = LA.eig(array)
-        return w, v.T 
-
-    def calculate_tensor_vecs_one_nuclei(self, tensor):
-        w_diamag, v_diamag = self.eigens(tensor[:9])
-        w_paramag, v_paramag = self.eigens(tensor[9:])
-        return np.concatenate((w_diamag, w_paramag), axis=None), np.concatenate((v_diamag, v_paramag), axis=0)
-
-    def calculate_tensor_vecs(self, tensors):
-        num_atoms = len(tensors)
-        tensor_eigen_vals = np.zeros((num_atoms, self.dim))
-        tensor_eigen_vecs = np.zeros((num_atoms, self.dim, 3))
-        for i in range(num_atoms):
-            tensor_eigen_vals[i], tensor_eigen_vecs[i] = self.calculate_tensor_vecs_one_nuclei(tensors[i])
-        return tensor_eigen_vals, tensor_eigen_vecs
-
-import pickle
 
 
 orca_tensor_columns = ['DIA00', 'DIA01', 'DIA02', 'DIA10', 'DIA11', 'DIA12', 'DIA20', 'DIA21', 'DIA22',
@@ -90,9 +101,8 @@ class TEV_generator:
     '''
     Calculate the Tensor Environment Variables of a molecule, just like AEVs, from a low level calculation result
     '''
-    def __init__(self, atom_types = [1, 6, 7, 8] , R_C =3.5, eta=16, xi=32, theta_m_values = np.array([(2*m+1)/16*np.pi for m in range(8)]), R_n_values = np.array([0.90, 1.55, 2.20, 2.85])):
-        self.TEV_calculator = TEVCalculator(atom_types, R_C, eta, xi, theta_m_values, R_n_values)
-        self.tensor_eigen = TensorEigen(atom_types=atom_types)
+    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2):
+        self.TEV_calculator = TEVCalculator(atom_types, R_C)
 
     def generate_TEVs(self, low_level_df_orca):
         coordinates = np.array(low_level_df_orca[['x', 'y', 'z']].values)
@@ -100,17 +110,15 @@ class TEV_generator:
         atom_list = np.array(low_level_df_orca['atom_symbol'].values)
         # convert atom_list to atom type
         atom_list = [atom_types[atom] for atom in atom_list]
-        tensor_eigen_vals, tensor_eigen_vecs = self.tensor_eigen.calculate_tensor_vecs(tensors)
-        TEVs = self.TEV_calculator.calculate_angular_AEVs(coordinates, atom_list, tensor_eigen_vecs)
-        # Dimension of tensor_eigen_vals is (num_atoms, 6)
-        # Dimension of TEVs is (num_atoms, 6, 128)
-        # Concatenate them to (num_atoms, 6, 129)
-        concated = np.concatenate((tensor_eigen_vals.reshape((len(tensor_eigen_vals), 6, 1)), TEVs), axis=2)
-        return concated
+        TEVs = self.TEV_calculator.calculate_TEVs(coordinates, atom_list, tensors)
+        return TEVs
 
-# with open('../../local/ns372/wB97X-V_pcSseg-1.pkl', 'rb') as f:
-#     wB97XV = pickle.load(f)
-
-# one_mol = wB97XV['ns372_0']
-# TEV_generator = TEV_generator()
-# print(TEV_generator.generate_TEVs(one_mol)[0])
+if __name__ == '__main__':
+    # import pickle
+    # with open('../local/ns372/wB97X-V_pcSseg-1.pkl', 'rb') as f:
+    #     wB97XV = pickle.load(f)
+    # one_mol = wB97XV['ns372_1']
+    one_mol = pd.read_csv('../../rotation/0_0_0.csv', index_col = 0)
+    print(one_mol)
+    TEV_generator = TEV_generator()
+    print(TEV_generator.generate_TEVs(one_mol)[4])
