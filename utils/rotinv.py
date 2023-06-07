@@ -119,11 +119,18 @@ class TEV_generator:
         return TEVs
 
 if __name__ == '__main__':
-    # import pickle
-    # with open('../local/ns372/wB97X-V_pcSseg-1.pkl', 'rb') as f:
-    #     wB97XV = pickle.load(f)
+    import pickle, h5py
+    with open('../local/ns372/wB97X-V_pcSseg-1.pkl', 'rb') as f:
+        wB97XV = pickle.load(f)
     # one_mol = wB97XV['ns372_1']
-    one_mol = pd.read_csv('../../rotation/0_0_0.csv', index_col = 0)
-    print(one_mol)
+    # one_mol = pd.read_csv('../../rotation/0_0_0.csv', index_col = 0)
+    # print(one_mol)
     TEV_generator = TEV_generator()
-    print(TEV_generator.generate_TEVs(one_mol)[4])
+    # print(TEV_generator.generate_TEVs(one_mol)[4])
+
+    aev_h5_handle = h5py.File("../local/ns372/tev.hdf5", "w")
+    for mol_name in wB97XV: 
+        tev = TEV_generator.generate_TEVs(wB97XV[mol_name])
+        aev_h5_handle.create_dataset(mol_name, data=tev)
+    aev_h5_handle.close()
+

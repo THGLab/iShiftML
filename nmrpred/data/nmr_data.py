@@ -38,7 +38,7 @@ def default_data_filter(input_arr, atom_type):
     return final_filter
 
 class NMRData:
-    def __init__(self, theory_levels, with_aev=True, data_path="/home/jerry/data/NMR_QM/processed_data", quiet=True) -> None:
+    def __init__(self, theory_levels, with_aev=True, with_tev=True, data_path="/home/jerry/data/NMR_QM/processed_data", quiet=True) -> None:
         with open(join(data_path, "atomic.pkl"), "rb") as f:
             self.atomic = pickle.load(f)
         file_ids = set(self.atomic)
@@ -49,6 +49,11 @@ class NMRData:
             #     self.aev = pickle.load(f)
         else:
             self.with_aev = False
+        if with_tev:
+            self.with_tev = True
+            self.tev = h5py.File(join(data_path, "tev.hdf5"), "r")
+        else:
+            self.with_tev = False
         self.qm_values = {}
         for theory_level in theory_levels:
             with open(join(data_path, theory_level + ".pkl"), "rb") as f:
@@ -171,6 +176,11 @@ class NMRData:
                         return_dict["aev"] = list(self.aev[idx][filter, 1:])
                     else:
                         return_dict["aev"].extend(self.aev[idx][filter, 1:])
+                if self.with_tev:
+                    if "tev" not in return_dict:
+                        return_dict["tev"] = list(self.tev[idx][filter, :])
+                    else:
+                        return_dict["tev"].extend(self.tev[idx][filter, :])
                 if input_level is not None:
                     input_cs_values = self.qm_values[input_level][idx][input_level].values
                     if "low_level_inputs" not in return_dict:
@@ -240,6 +250,7 @@ class NMRData:
                 for step in range(n_steps):
                     batch_idx = indices[step * batch_size: (step+1) * batch_size]
                     batch = {}
+
                     for key in data_dict:
                         if key == "labels":
                             batch["labels"] = [data_dict[key][i] for i in batch_idx]

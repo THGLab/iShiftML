@@ -26,7 +26,7 @@ class TEVCalculator:
         else:
             return 0
 
-    def calculate_angular_AEVs(self, coordinates, atom_list, tensor_vecs):
+    def calculate_TEVs(self, coordinates, atom_list, tensor_vecs):
         num_atoms = len(atom_list)
         TEVs = np.zeros((num_atoms, 6, self.dim))
 
@@ -101,7 +101,7 @@ class TEV_generator:
         # convert atom_list to atom type
         atom_list = [atom_types[atom] for atom in atom_list]
         tensor_eigen_vals, tensor_eigen_vecs = self.tensor_eigen.calculate_tensor_vecs(tensors)
-        TEVs = self.TEV_calculator.calculate_angular_AEVs(coordinates, atom_list, tensor_eigen_vecs)
+        TEVs = self.TEV_calculator.calculate_TEVs(coordinates, atom_list, tensor_eigen_vecs)
         # Dimension of tensor_eigen_vals is (num_atoms, 6)
         # Dimension of TEVs is (num_atoms, 6, 128)
         # Concatenate them to (num_atoms, 6, 129)

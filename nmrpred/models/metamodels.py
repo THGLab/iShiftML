@@ -97,3 +97,41 @@ class ExtendedAttention(nn.Module):
         values = self.value_network(tensorial_inputs)
         final_predictions = torch.sum(values * attention_masks[:, :-1], dim=-1) + attention_masks[:, -1]
         return final_predictions
+
+
+
+
+
+class Attention_TEV(nn.Module):
+    def __init__(self, structure_encoder, attention_mask_network, dim_tev_1tensor = 17, mol_based=False, with_low_level_input=False, return_attention_masks=False):
+        """
+        A Network like attention but with a TEV input replacing the tensorial features
+        """
+        super().__init__()
+        self.structure_encoder = structure_encoder
+        self.attention_mask_network = attention_mask_network
+        self.mol_based = mol_based
+        self.with_low_level_input = with_low_level_input
+        self.return_attention_masks = return_attention_masks
+        self.dim_tev_1tensor = dim_tev_1tensor
+
+    def forward(self, inputs):
+        tev_inputs = inputs["tev"]
+        if hasattr(self, "with_low_level_input"):
+            if self.with_low_level_input:
+                low_level_inputs = inputs["low_level_inputs"]
+                tev_inputs = torch.cat([tev_inputs, low_level_inputs[:, None]], dim=-1)
+        encoded_structures = self.structure_encoder(inputs)
+        if self.mol_based:
+            masks = inputs["M"]
+            tev_inputs = tev_inputs[masks]
+            encoded_structures = encoded_structures[masks]
+        attention_inputs = torch.cat([encoded_structures, tev_inputs], dim=-1)
+        attention_masks = self.attention_mask_network(attention_inputs)
+        final_predictions = tev_inputs[:,0] * attention_masks[:, 0] + tev_inputs[:, self.dim_tev_1tensor] * attention_masks[:, 1]  + attention_masks[:, 2]
+        return final_predictions
+
+	# if self.return_attention_masks:
+        #    return final_predictions, attention_masks
+        # else:
+        #    return final_predictions
