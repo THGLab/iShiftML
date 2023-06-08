@@ -60,7 +60,7 @@ print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shif
 
 dropout = settings['training']['dropout']
 feature_extractor = AEVMLP([384, 128, 128], dropout)
-feature_dim = 34
+feature_dim = 64
 with_low_level_inputs = settings['model'].get('with_low_level_inputs', False)
 if with_low_level_inputs:
     feature_dim += 1
@@ -70,7 +70,7 @@ attention_input_dim = 128 + feature_dim
 attention_output_dim = 3
 
 attention_mask_network = AttentionMask([attention_input_dim, 64, 16, attention_output_dim], dropout)
-model = Attention_TEV(feature_extractor, attention_mask_network, dim_tev_1tensor = 17, with_low_level_input=with_low_level_inputs)
+model = Attention_TEV(feature_extractor, attention_mask_network, dim_tev_tensors = 64, with_low_level_input=with_low_level_inputs)
 
 
 # optimizer
