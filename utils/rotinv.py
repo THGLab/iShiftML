@@ -52,7 +52,7 @@ class TEVCalculator:
         self.atom_types = atom_types # H, C, N, O
         self.dim_direction_tensor = len(atom_types) * len(atom_types)
         self.dim_magnitude_tensor = 16
-        self.dim = (self.dim_magnitude_tensor  + self.dim_direction_tensor) * 2
+        self.dim = (self.dim_magnitude_tensor  + self.dim_direction_tensor) * 2 + 2
         self.atom_dict = {value: index for index, value in enumerate(atom_types)}
 
     def cutoff_function(self, R):
@@ -84,24 +84,27 @@ class TEVCalculator:
             # print(r_ji_list)
             # print(R_ji_list)
 
-            # extract PARA and DIA
             DIA = tensors[i, :9].reshape((3,3))
             PARA = tensors[i, 9:].reshape((3,3))
-            # normalize
-            DIA = DIA / LA.norm(DIA, 'fro')
-            PARA = PARA / LA.norm(PARA, 'fro')
-
-            # extract trace of DIA and PARA, and Calculate the magnitude tensor
+            # extract PARA and DIA trace
             trace_DIA = np.trace(DIA)
             trace_PARA = np.trace(PARA)
+
+            #  Calculate the magnitude tensor
+            TEVs[i, 0] = trace_DIA
+            TEVs[i, 1] = trace_PARA
             eta = self.etas['DIA'][atom_list[i]]
             T_n_values = self.t_n_values['DIA'][atom_list[i]]
             for n in range(16):
-                TEVs[i, n] = np.exp(-eta * (trace_DIA - T_n_values[n])**2) 
+                TEVs[i, 2 + n] = np.exp(-eta * (trace_DIA - T_n_values[n])**2) 
             eta = self.etas['PARA'][atom_list[i]]
             T_n_values = self.t_n_values['PARA'][atom_list[i]]
             for n in range(16):
-                TEVs[i, self.dim_magnitude_tensor + n] = np.exp(-eta * (trace_PARA - T_n_values[n])**2) 
+                TEVs[i, 2 + self.dim_magnitude_tensor + n] = np.exp(-eta * (trace_PARA - T_n_values[n])**2) 
+
+            # normalize PARA and DIA
+            DIA = DIA / LA.norm(DIA, 'fro')
+            PARA = PARA / LA.norm(PARA, 'fro')
 
             #generate j list that belongs to allowed atom types and not equal to i
             j_list = [j for j in range(num_atoms) if atom_list[j] in self.atom_types and j != i]
@@ -112,8 +115,8 @@ class TEVCalculator:
                 r_ki = r_ji_list[k]
 
                 # calculate index of TEVs, offset by 1 due to the trace
-                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + self.dim_magnitude_tensor * 2
-                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + self.dim_magnitude_tensor * 2
+                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + self.dim_magnitude_tensor * 2 + 2
+                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + self.dim_magnitude_tensor * 2 + 2
                 # calculate r_ji^T * DIA * r_ki
                 TEVs[i, index_jk] += np.dot(np.dot(r_ji, DIA), r_ki)
                 TEVs[i, index_kj] += np.dot(np.dot(r_ki, DIA), r_ji)
