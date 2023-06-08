@@ -3,36 +3,7 @@ from numpy import linalg as LA
 import pandas as pd
 import itertools
 
-
-default_data_ranges = {'DIA':{
-    1: (45, 150),
-    6: (670, 820),
-    7: (865, 1060),
-    8: (1115, 1235)},
-    'PARA':{
-    1: (-65, 25),
-    6: (-1060, -10),
-    7: (-1900, 50),
-    8: (-3400, 200)}
-}     
-def calculate_eta_t_n(min_value, max_value, num_values):
-    '''
-    Calculate the eta and t_n values
-    '''
-    gap = (max_value - min_value) / (num_values - 1)
-    eta = 1 / ( gap**2)
-    return eta, np.array([min_value + gap * i for i in range(num_values)])
-
-default_etas = {}
-default_t_n_values = {}
-for tensortype in ['DIA', 'PARA']:
-    default_etas[tensortype] = {}
-    default_t_n_values[tensortype] = {}
-    for atomtype in [1, 6, 7, 8]:
-        default_etas[tensortype][atomtype], default_t_n_values[tensortype][atomtype] = calculate_eta_t_n(default_data_ranges[tensortype][atomtype][0], default_data_ranges[tensortype][atomtype][1], 16)
-# print(etas)
-# print(t_n_values)
-
+pi_over_4 = np.pi / 4
 class TEVCalculator:
     '''
     Calculate the Tensor Environment Variables of a molecule, just like AEVs
@@ -43,20 +14,21 @@ class TEVCalculator:
     T' = R T R^T, R is a rotation matrix, T is the NMR shielding tensor
     Then r'^T T' r' = r^T R^T R T R^T R r = r^T T r
     '''
-    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None):
+    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2):
         self.R_C =R_C
-        self.etas = default_etas
-        self.t_n_values = default_t_n_values
+        # self.eta = eta
         # self.xi = xi
         # self.theta_m_values = theta_m_values
+        # self.R_n_values = R_n_values
         self.atom_types = atom_types # H, C, N, O
-        self.dim_direction_tensor = len(atom_types) * len(atom_types)
-        self.dim_magnitude_tensor = 16
-        self.dim = (self.dim_magnitude_tensor  + self.dim_direction_tensor) * 2
+        self.dim_1tensor = len(atom_types) * len(atom_types) + 1
+        self.dim = self.dim_1tensor * 2
         self.atom_dict = {value: index for index, value in enumerate(atom_types)}
 
     def cutoff_function(self, R):
         return np.where(R <= self.R_C, (1 + np.cos(np.pi * R / self.R_C)) / 2, 0)
+
+        
 
     def calculate_TEVs(self, coordinates, atom_list, tensors):
         num_atoms = len(atom_list)
@@ -87,21 +59,20 @@ class TEVCalculator:
             # extract PARA and DIA
             DIA = tensors[i, :9].reshape((3,3))
             PARA = tensors[i, 9:].reshape((3,3))
-            # normalize
-            DIA = DIA / LA.norm(DIA, 'fro')
-            PARA = PARA / LA.norm(PARA, 'fro')
-
-            # extract trace of DIA and PARA, and Calculate the magnitude tensor
+            # extract trace of DIA and PARA, put into TEVs 
             trace_DIA = np.trace(DIA)
             trace_PARA = np.trace(PARA)
-            eta = self.etas['DIA'][atom_list[i]]
-            T_n_values = self.t_n_values['DIA'][atom_list[i]]
-            for n in range(16):
-                TEVs[i, n] = np.exp(-eta * (trace_DIA - T_n_values[n])**2) 
-            eta = self.etas['PARA'][atom_list[i]]
-            T_n_values = self.t_n_values['PARA'][atom_list[i]]
-            for n in range(16):
-                TEVs[i, self.dim_magnitude_tensor + n] = np.exp(-eta * (trace_PARA - T_n_values[n])**2) 
+            TEVs[i, 0] = trace_DIA
+            TEVs[i, self.dim_1tensor] = trace_PARA
+            # normalize
+            if trace_DIA < 1e-2:
+                trace_DIA = 0.0
+            else:
+                DIA = DIA / trace_DIA
+            if trace_PARA < 1e-2:
+                trace_PARA = 0.0
+            else:
+                PARA = PARA / trace_PARA
 
             #generate j list that belongs to allowed atom types and not equal to i
             j_list = [j for j in range(num_atoms) if atom_list[j] in self.atom_types and j != i]
@@ -112,16 +83,16 @@ class TEVCalculator:
                 r_ki = r_ji_list[k]
 
                 # calculate index of TEVs, offset by 1 due to the trace
-                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + self.dim_magnitude_tensor * 2
-                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + self.dim_magnitude_tensor * 2
+                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + 1
+                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + 1
                 # calculate r_ji^T * DIA * r_ki
                 TEVs[i, index_jk] += np.dot(np.dot(r_ji, DIA), r_ki)
                 TEVs[i, index_kj] += np.dot(np.dot(r_ki, DIA), r_ji)
                 # calculate r_ji^T * PARA * r_ki
-                TEVs[i, self.dim_direction_tensor + index_jk] += np.dot(np.dot(r_ji, PARA), r_ki)
-                TEVs[i, self.dim_direction_tensor + index_kj] += np.dot(np.dot(r_ki, PARA), r_ji)
+                TEVs[i, self.dim_1tensor + index_jk] += np.dot(np.dot(r_ji, PARA), r_ki)
+                TEVs[i, self.dim_1tensor + index_kj] += np.dot(np.dot(r_ki, PARA), r_ji)
 
-                # print(j ,k, index_jk, index_kj,TEVs[i, index_jk], TEVs[i, index_kj], TEVs[i, self.dim_direction_tensor + index_jk], TEVs[i, self.dim_direction_tensor + index_kj])
+                # print(j ,k, index_jk, index_kj,TEVs[i, index_jk], TEVs[i, index_kj], TEVs[i, self.dim_1tensor + index_jk], TEVs[i, self.dim_1tensor + index_kj])
 
         return TEVs
 
@@ -151,15 +122,15 @@ if __name__ == '__main__':
     import pickle, h5py
     with open('../local/ns372/wB97X-V_pcSseg-1.pkl', 'rb') as f:
         wB97XV = pickle.load(f)
-    one_mol = wB97XV['ns372_1']
+    # one_mol = wB97XV['ns372_1']
     # one_mol = pd.read_csv('../../rotation/0_0_0.csv', index_col = 0)
-    print(one_mol)
+    # print(one_mol)
     TEV_generator = TEV_generator()
-    print(TEV_generator.generate_TEVs(one_mol)[1])
+    # print(TEV_generator.generate_TEVs(one_mol)[4])
 
-    # aev_h5_handle = h5py.File("../local/ns372/tev.hdf5", "w")
-    # for mol_name in wB97XV: 
-    #     tev = TEV_generator.generate_TEVs(wB97XV[mol_name])
-    #     aev_h5_handle.create_dataset(mol_name, data=tev)
-    # aev_h5_handle.close()
+    aev_h5_handle = h5py.File("../local/ns372/tev.hdf5", "w")
+    for mol_name in wB97XV: 
+        tev = TEV_generator.generate_TEVs(wB97XV[mol_name])
+        aev_h5_handle.create_dataset(mol_name, data=tev)
+    aev_h5_handle.close()
 
