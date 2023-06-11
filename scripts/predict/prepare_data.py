@@ -6,15 +6,31 @@ including all the aev vectors, all coordinate vectors and atom types
 import subprocess
 import numpy as np
 import pandas as pd
+<<<<<<< HEAD
 import os
 import pickle
 from ase import io
 import h5py
 import sys
+=======
+from tqdm import tqdm
+import os, sys
+import pickle
+from ase import io
+import h5py
+import multiprocessing
+>>>>>>> 4770b5c (modify the prediction script to use it easier)
 import argparse
+
+sys.path.append('/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/utils')
+import rotinv
 
 atom_type_mapping={"H":"1","C":"6","N":"7","O":"8"}
 
+<<<<<<< HEAD
+=======
+save_addr = "./temp"
+>>>>>>> 4770b5c (modify the prediction script to use it easier)
 max_atoms = 8
 sample_xyz_folder = "./"
 
@@ -49,6 +65,7 @@ def process_single_file(xyz_file):
     except:
         print("Error in processing file: " + mol_name)
         sys.exit()
+<<<<<<< HEAD
     
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -64,9 +81,12 @@ def parse_args():
     if args.name is None:
         args.name = os.path.basename(args.xyz_file).replace(".xyz", "")
     return args
+=======
+
+>>>>>>> 4770b5c (modify the prediction script to use it easier)
     
 def convert_index(args):
-    df = pd.read_csv(args.low_level_QM_calculation)
+    df = pd.read_csv(args.low_level_QM_file)
     n_atoms = len(df)
     if args.prediction_index is None:
         prediction_index = np.arange(n_atoms)
@@ -78,33 +98,70 @@ def convert_index(args):
         prediction_index = np.arange(idx_start, idx_end + 1)
     return prediction_index
 
-args = parse_args()
-os.makedirs(args.save_folder, exist_ok=True)
-needed_indices = convert_index(args)
+def convert_index(low_level_QM_file, prediction_index =None):
+    df = pd.read_csv(low_level_QM_file)
+    n_atoms = len(df)
+    if prediction_index is None:
+        prediction_index = np.arange(n_atoms)
+    else:
+        idx_start, idx_end = prediction_index.split("-")
+        idx_start = int(idx_start)
+        idx_end = int(idx_end)
+        assert idx_start >= 0 and idx_end < n_atoms, "Invalid atom index range!"
+        prediction_index = np.arange(idx_start, idx_end + 1)
+    return prediction_index
 
-# process xyz files to obtain atomic environment vectors (AEVs) and atomic properties
-aev, atomic_props = process_single_file(args.xyz_file)
-aev_h5_handle = h5py.File(os.path.join(args.save_folder, "aev.hdf5"), "w")
-aev_h5_handle.create_dataset(args.name, data=aev[needed_indices])
-aev_h5_handle.close()
+def xyzfile_from_low_level_QM(low_level_QM_file, save_folder, name):
+    df = pd.read_csv(low_level_QM_file)
+    xyzfile = os.path.join(save_folder, name + ".xyz")
+    with open(xyzfile, 'w') as f:
+        f.write(str(len(df)) + "\n")
+        f.write(name +"\n")
+        f.write(df[['atom_symbol', 'x', 'y', 'z']].to_string(header=False, index=False))
+    return xyzfile
 
-atomics = {}
-filtered_atomic_props = {}
-for key in atomic_props:
-    filtered_atomic_props[key] = atomic_props[key][needed_indices]
-atomics[args.name] = filtered_atomic_props
-with open(os.path.join(args.save_folder, "atomic.pkl"), "wb") as f:
-    pickle.dump(atomics, f)
-
+def prepare_data(low_level_QM_file, low_level_theory, need_tev = False, xyz_file=None, name=None, prediction_index =None, save_folder='./temp'):
+    if name is None:
+        name = os.path.basename(low_level_QM_file).split(".")[0]
+    os.makedirs(save_folder, exist_ok=True)
+    needed_indices = convert_index(low_level_QM_file, prediction_index)
+    if xyz_file is None:
+        xyz_file = xyzfile_from_low_level_QM(low_level_QM_file, save_folder, name)
+        
+    aev, atomic_props = process_single_file(xyz_file)
+    aev_h5_handle = h5py.File(os.path.join(save_folder, "aev.hdf5"), "w")
+    aev_h5_handle.create_dataset(name, data=aev[needed_indices])
+    aev_h5_handle.close()
     
-# process QM calculation dataframe
-qm_data = {}
-df = pd.read_csv(args.low_level_QM_calculation)
-df = df.iloc[needed_indices]
-qm_data[args.name] = df
-with open(os.path.join(args.save_folder, "{}.pkl".format(args.low_level_theory)), "wb") as f:
-    pickle.dump(qm_data, f)
+    atomics = {}
+    filtered_atomic_props = {}
+    for key in atomic_props:
+        filtered_atomic_props[key] = atomic_props[key][needed_indices]
+    atomics[name] = filtered_atomic_props
+    with open(os.path.join(save_folder, "atomic.pkl"), "wb") as f:
+        pickle.dump(atomics, f)
+        
+    qm_data = {}
+    df = pd.read_csv(low_level_QM_file)
+    if need_tev:
+        TEV_generator = rotinv.TEV_generator()
+        tev = TEV_generator.generate_TEVs(df)
+        tev_h5_handle = h5py.File(os.path.join(save_folder, "tev.hdf5"), "w")
+        tev_h5_handle.create_dataset(name, data=tev[needed_indices])
+        tev_h5_handle.close()
+    
+    df = df.iloc[needed_indices]
+    qm_data[name] = df
+    with open(os.path.join(save_folder, "{}.pkl".format(low_level_theory)), "wb") as f:
+        pickle.dump(qm_data, f)
+        
+        
+    with open(os.path.join(save_folder,"predict_data.txt"), "w") as f:
+        f.write("test\n")
+        f.write("  {}\n".format(name))
+    print("Finished processing", name)
 
+<<<<<<< HEAD
 if args.high_level_QM_calculation is not None:
     qm_data = {}
     df = pd.read_csv(args.high_level_QM_calculation)
@@ -120,3 +177,57 @@ with open("predict_data.txt", "w") as f:
     f.write("  {}\n".format(args.name))
     
 print("Finished processing", args.name)
+=======
+
+
+if __name__ == "__main__":
+        
+    def parse_args():
+        parser = argparse.ArgumentParser()
+        parser.add_argument("low_level_QM_file")
+        parser.add_argument("--xyz_file", default=None, help="The xyz file for the molecule")
+        parser.add_argument("--low_level_theory", default="wB97X-V_pcSseg-1")
+        parser.add_argument("--name", default=None, help="Name of data. When not provided, infer from necessary input file names")
+        parser.add_argument("--prediction_index", default=None, help="In the format of i.e. 0-8, where 8 is inclusive")
+        parser.add_argument("--save_folder", default="processed_data", help="A folder to save the processed data")
+        args = parser.parse_args()
+        if args.name is None:
+            args.name = os.path.basename(args.low_level_QM_file).split('.')[0]
+        return args
+
+    args = parse_args()
+    prepare_data(args.low_level_QM_file, args.low_level_theory, args.xyz_file, args.name, args.prediction_index, args.save_folder)
+    # os.makedirs(args.save_folder, exist_ok=True)
+    # needed_indices = convert_index(args)
+
+    # # process xyz files to obtain atomic environment vectors (AEVs) and atomic properties
+    # aev, atomic_props = process_single_file(args.xyz_file)
+    # aev_h5_handle = h5py.File(os.path.join(args.save_folder, "aev.hdf5"), "w")
+    # aev_h5_handle.create_dataset(args.name, data=aev[needed_indices])
+    # aev_h5_handle.close()
+
+    # atomics = {}
+    # filtered_atomic_props = {}
+    # for key in atomic_props:
+    #     filtered_atomic_props[key] = atomic_props[key][needed_indices]
+    # atomics[args.name] = filtered_atomic_props
+    # with open(os.path.join(args.save_folder, "atomic.pkl"), "wb") as f:
+    #     pickle.dump(atomics, f)
+
+        
+    # # process QM calculation dataframe
+    # qm_data = {}
+    # df = pd.read_csv(args.low_level_QM_file)
+    # df = df.iloc[needed_indices]
+    # qm_data[args.name] = df
+    # with open(os.path.join(args.save_folder, "{}.pkl".format(args.low_level_theory)), "wb") as f:
+    #     pickle.dump(qm_data, f)
+
+        
+    # # write data input file
+    # with open("predict_data.txt", "w") as f:
+    #     f.write("test\n")
+    #     f.write("  {}\n".format(args.name))
+        
+    # print("Finished processing", args.name)
+>>>>>>> 4770b5c (modify the prediction script to use it easier)
