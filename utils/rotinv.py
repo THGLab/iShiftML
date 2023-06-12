@@ -4,17 +4,11 @@ import pandas as pd
 import itertools
 
 
-default_data_ranges = {'DIA':{
-    1: (45, 150),
-    6: (670, 820),
-    7: (865, 1060),
-    8: (1115, 1235)},
-    'PARA':{
-    1: (-65, 25),
-    6: (-1060, -10),
-    7: (-1900, 50),
-    8: (-3400, 200)}
-}     
+default_data_ranges = {1: {'DIA': (13, 58), 'PARA': (-30, 15), 'ISO': (11, 42) }, 
+                       6: {'DIA': (205, 280), 'PARA': (-380, 10), 'ISO': (-120, 221) }, 
+                       7: {'DIA': (280, 355), 'PARA': (-690, 30), 'ISO': (-390, 323) }, 
+                       8: {'DIA': (367, 421), 'PARA': (-1300, 80), 'ISO': (-841, 430) }}
+
 def calculate_eta_t_n(min_value, max_value, num_values):
     '''
     Calculate the eta and t_n values
@@ -23,13 +17,14 @@ def calculate_eta_t_n(min_value, max_value, num_values):
     eta = 1 / ( gap**2)
     return eta, np.array([min_value + gap * i for i in range(num_values)])
 
+dimension_mag = {'DIA': 16, 'PARA': 16, 'ISO': 32 }
 default_etas = {}
 default_t_n_values = {}
-for tensortype in ['DIA', 'PARA']:
-    default_etas[tensortype] = {}
-    default_t_n_values[tensortype] = {}
-    for atomtype in [1, 6, 7, 8]:
-        default_etas[tensortype][atomtype], default_t_n_values[tensortype][atomtype] = calculate_eta_t_n(default_data_ranges[tensortype][atomtype][0], default_data_ranges[tensortype][atomtype][1], 16)
+for atomtype in [1, 6, 7, 8]:
+    default_etas[atomtype] = {}
+    default_t_n_values[atomtype] = {}
+    for tensortype in ['DIA', 'PARA', 'ISO']:
+        default_etas[atomtype][tensortype], default_t_n_values[atomtype][tensortype] = calculate_eta_t_n(default_data_ranges[atomtype][tensortype][0], default_data_ranges[atomtype][tensortype][1], dimension_mag[tensortype])
 # print(etas)
 # print(t_n_values)
 
@@ -45,14 +40,23 @@ class TEVCalculator:
     '''
     def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None):
         self.R_C =R_C
-        self.etas = default_etas
-        self.t_n_values = default_t_n_values
+        if etas is None:
+            self.etas = default_etas
+        else:
+            self.etas = etas
+        if t_n_values is None:
+            self.t_n_values = default_t_n_values
+        else:
+            self.t_n_values = t_n_values
         # self.xi = xi
         # self.theta_m_values = theta_m_values
         self.atom_types = atom_types # H, C, N, O
         self.dim_direction_tensor = len(atom_types) * len(atom_types)
-        self.dim_magnitude_tensor = 16
-        self.dim = (self.dim_magnitude_tensor  + self.dim_direction_tensor) * 2 + 2
+        # print(self.t_n_values)
+        self.dim_magnitude_iso = len(self.t_n_values[atom_types[0]]['ISO'])
+        self.dim_magnitude_1tensor = len(self.t_n_values[atom_types[0]]['DIA'])
+        self.dim_magnitude = self.dim_magnitude_1tensor * 2 + self.dim_magnitude_iso
+        self.dim = self.dim_magnitude  + self.dim_direction_tensor * 2 + 2
         self.atom_dict = {value: index for index, value in enumerate(atom_types)}
 
     def cutoff_function(self, R):
@@ -87,20 +91,20 @@ class TEVCalculator:
             DIA = tensors[i, :9].reshape((3,3))
             PARA = tensors[i, 9:].reshape((3,3))
             # extract PARA and DIA trace
-            trace_DIA = np.trace(DIA)
-            trace_PARA = np.trace(PARA)
+            iso_DIA = np.trace(DIA) / 3.0
+            iso_PARA = np.trace(PARA) / 3.0
+            isotropic = iso_DIA + iso_PARA
 
             #  Calculate the magnitude tensor
-            TEVs[i, 0] = trace_DIA
-            TEVs[i, 1] = trace_PARA
-            eta = self.etas['DIA'][atom_list[i]]
-            T_n_values = self.t_n_values['DIA'][atom_list[i]]
-            for n in range(16):
-                TEVs[i, 2 + n] = np.exp(-eta * (trace_DIA - T_n_values[n])**2) 
-            eta = self.etas['PARA'][atom_list[i]]
-            T_n_values = self.t_n_values['PARA'][atom_list[i]]
-            for n in range(16):
-                TEVs[i, 2 + self.dim_magnitude_tensor + n] = np.exp(-eta * (trace_PARA - T_n_values[n])**2) 
+            TEVs[i, 0] = iso_DIA
+            TEVs[i, 1] = iso_PARA
+            etas = self.etas[atom_list[i]]
+            T_n_values= self.t_n_values[atom_list[i]]
+            for n in range(self.dim_magnitude_iso):
+                TEVs[i, 2 + n] = np.exp(-etas['ISO'] * (isotropic - T_n_values['ISO'][n])**2) 
+            for n in range(self.dim_magnitude_1tensor):
+                TEVs[i, 2 + self.dim_magnitude_iso + n] = np.exp(-etas['DIA'] * (iso_DIA - T_n_values['DIA'][n])**2) 
+                TEVs[i, 2 + self.dim_magnitude_iso + self.dim_magnitude_1tensor + n] = np.exp(-etas['PARA'] * (iso_PARA - T_n_values['PARA'][n])**2) 
 
             # normalize PARA and DIA
             DIA = DIA / LA.norm(DIA, 'fro')
@@ -115,8 +119,8 @@ class TEVCalculator:
                 r_ki = r_ji_list[k]
 
                 # calculate index of TEVs, offset by 1 due to the trace
-                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + self.dim_magnitude_tensor * 2 + 2
-                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + self.dim_magnitude_tensor * 2 + 2
+                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + self.dim_magnitude + 2
+                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + self.dim_magnitude + 2
                 # calculate r_ji^T * DIA * r_ki
                 TEVs[i, index_jk] += np.dot(np.dot(r_ji, DIA), r_ki)
                 TEVs[i, index_kj] += np.dot(np.dot(r_ki, DIA), r_ji)
@@ -152,7 +156,7 @@ class TEV_generator:
 
 if __name__ == '__main__':
     import pickle, h5py
-    with open('../local/ns372/wB97X-V_pcSseg-1.pkl', 'rb') as f:
+    with open('../local/wB97X-V_pcSseg-1_ns372.pkl', 'rb') as f:
         wB97XV = pickle.load(f)
     one_mol = wB97XV['ns372_1']
     # one_mol = pd.read_csv('../../rotation/0_0_0.csv', index_col = 0)
