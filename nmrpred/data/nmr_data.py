@@ -38,7 +38,7 @@ def default_data_filter(input_arr, atom_type):
     return final_filter
 
 class NMRData:
-    def __init__(self, theory_levels, with_aev=True, with_tev=True, data_path="/home/jerry/data/NMR_QM/processed_data", quiet=True) -> None:
+    def __init__(self, theory_levels, with_aev=True, with_tev=False, data_path="/home/jerry/data/NMR_QM/processed_data", quiet=True) -> None:
         with open(join(data_path, "atomic.pkl"), "rb") as f:
             self.atomic = pickle.load(f)
         file_ids = set(self.atomic)

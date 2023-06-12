@@ -31,11 +31,13 @@ def parse_args():
     parser.add_argument("--prediction_index", default=None, help="In the format of i.e. 0-8, where 8 is inclusive")
     parser.add_argument("--scratch_folder", default="temp", help="A folder to save the processed data")
     parser.add_argument("--output_folder", default="local", help="A folder to save the output")
-    parser.add_argument("--has_target", default=False, help ="Whether the data has target")
-    parser.add_argument("--include_low_level", default=True, help ="Whether to include low level data")
+    parser.add_argument("--has_target", action="store_true", help="When the high level target data has been prepared, \
+                        setting this argument to True will add the high level target data in the prediction files.")
+    parser.add_argument("--include_low_level", action="store_true", help="setting this argument to True \
+                        will add the low level calculations to the prediction files.")
     parser.add_argument("--batch_size", default=128, help="The batch size for prediction")
     parser.add_argument("--device", default="cpu", help="The device to use for prediction")
-    parser.add_argument("--with_tev", default=False, help="whether the model is trained with tev")
+    parser.add_argument("--with_tev", action="store_true", help="whether the model is trained with tev. Setting this argument to True will calculate TEVs")
     
     args = parser.parse_args()
     if args.name is None:

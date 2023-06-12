@@ -38,16 +38,17 @@ Otherwise, you always use the previously installed version of this library.
 ### Step 1: Prepare data
 Run `iShiftML/scripts/predict/prepare_data.py` to prepare data for making predictions. The full usage note is given below:
 ```python
-usage: prepare_data.py [-h] [--low_level_theory LOW_LEVEL_THEORY] [--high_level_QM_calculation HIGH_LEVEL_QM_CALCULATION] [--high_level_theory HIGH_LEVEL_THEORY] [--name NAME]
-                       [--prediction_index PREDICTION_INDEX] [--save_folder SAVE_FOLDER]
-                       xyz_file low_level_QM_calculation
+usage: prepare_data.py [-h] [--xyz_file XYZ_FILE] [--need_tev] [--low_level_theory LOW_LEVEL_THEORY] [--high_level_QM_calculation HIGH_LEVEL_QM_CALCULATION] [--high_level_theory HIGH_LEVEL_THEORY]
+                       [--name NAME] [--prediction_index PREDICTION_INDEX] [--save_folder SAVE_FOLDER]
+                       low_level_QM_file
 
 positional arguments:
-  xyz_file
-  low_level_QM_calculation
+  low_level_QM_file
 
 optional arguments:
   -h, --help            show this help message and exit
+  --xyz_file XYZ_FILE   The xyz file for the molecule
+  --need_tev            whether to calculate Tensor environment variables
   --low_level_theory LOW_LEVEL_THEORY
   --high_level_QM_calculation HIGH_LEVEL_QM_CALCULATION
                         When provided, high level data will also be prepared
@@ -59,11 +60,11 @@ optional arguments:
   --save_folder SAVE_FOLDER
                         A folder to save the processed data
 ```
-`xyz_file` is the molecule geometry file in xyz format. 
-
 `low_level_QM_calculation` is the low level QM calculation organized in csv format. The csv file should contain following columns:
 
 [atom_idx, atom_symbol, x, y, z, wB97X-V_pcSseg-1, DIA00, DIA01, DIA02, DIA10, DIA11, DIA12, DIA20, DIA21, DIA22, PARA00, PARA01, PARA02, PARA10, PARA11, PARA12, PARA20, PARA21, PARA22] 
+
+`xyz_file` is the molecule geometry file in xyz format. It is not needed if xyz info in contained in `low_level_QM_calculation`
 
 If only part of the atoms need to be calculated, please specify the indices of the atoms required in `--prediction_index` argument.
 
