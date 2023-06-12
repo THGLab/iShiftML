@@ -39,7 +39,7 @@ else:
     device = [torch.device(settings['general']['device'])]
 
 # data
-data_collection = NMRData([settings['data']['input_lot'], settings['data']['target_lot']], data_path=settings['data']['root'])
+data_collection = NMRData([settings['data']['input_lot'], settings['data']['target_lot']], data_path=settings['data']['root'], with_tev=True)
 data_collection.read_data_splitting(settings['data']['splitting'])
 # data_collection.assign_train_val_test(mode="simple", proportions={"train":0.8, "val":0.1, "test":0.1})
 generators = data_collection.get_data_generator(atom=settings['data']['shift_types'],
@@ -60,7 +60,7 @@ print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shif
 
 dropout = settings['training']['dropout']
 feature_extractor = AEVMLP([384, 128, 128], dropout)
-feature_dim = 64
+feature_dim = 96
 with_low_level_inputs = settings['model'].get('with_low_level_inputs', False)
 if with_low_level_inputs:
     feature_dim += 1
@@ -69,7 +69,7 @@ if with_low_level_inputs:
 attention_input_dim = 128 + feature_dim
 attention_output_dim = 3
 
-attention_mask_network = AttentionMask([attention_input_dim, 64, 16, attention_output_dim], dropout)
+attention_mask_network = AttentionMask([attention_input_dim, 128, 64, 16, attention_output_dim], dropout)
 model = Attention_TEV(feature_extractor, attention_mask_network, dim_tev_tensors = 64, with_low_level_input=with_low_level_inputs)
 
 
