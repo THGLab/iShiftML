@@ -38,7 +38,7 @@ class TEVCalculator:
     T' = R T R^T, R is a rotation matrix, T is the NMR shielding tensor
     Then r'^T T' r' = r^T R^T R T R^T R r = r^T T r
     '''
-    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None, xi=8, theta_m_values = np.array([m/2*np.pi for m in range(4)])):
+    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None):
         self.R_C =R_C
         if etas is None:
             self.etas = default_etas
@@ -48,17 +48,15 @@ class TEVCalculator:
             self.t_n_values = default_t_n_values
         else:
             self.t_n_values = t_n_values
-        self.xi = xi
-        self.theta_m_values = theta_m_values
+        # self.xi = xi
+        # self.theta_m_values = theta_m_values
         self.atom_types = atom_types # H, C, N, O
+        self.dim_direction_tensor = len(atom_types) * len(atom_types)
         # print(self.t_n_values)
         self.dim_magnitude_iso = len(self.t_n_values[atom_types[0]]['ISO'])
         self.dim_magnitude_1tensor = len(self.t_n_values[atom_types[0]]['DIA'])
         self.dim_magnitude = self.dim_magnitude_1tensor * 2 + self.dim_magnitude_iso
-        self.dim_direction_m = len(self.theta_m_values) 
-        self.dim_direction_tensor = self.dim_direction_m * len(atom_types) * len(atom_types)
-        self.dim_direction =self.dim_direction_tensor  * 2
-        self.dim = 2 + self.dim_magnitude  + self.dim_direction
+        self.dim = self.dim_magnitude  + self.dim_direction_tensor * 2 + 2
         self.atom_dict = {value: index for index, value in enumerate(atom_types)}
 
     def cutoff_function(self, R):
@@ -81,12 +79,12 @@ class TEVCalculator:
             # Normalize r_ji
             R_ji_list  = LA.norm(r_ji_list , axis=1)
             R_ji_list[i] = np.inf # set diagonal elements to inf
-            # Normalize r_ji_list
             r_ji_list = r_ji_list / R_ji_list[:, None]
 
             # Multiply r_ji_list by cutoff function
             R_ji_list[i] = 0 # set diagonal elements to 0
             R_ji_list = self.cutoff_function(R_ji_list)
+            r_ji_list = r_ji_list * R_ji_list[:, None]
             # print(r_ji_list)
             # print(R_ji_list)
 
@@ -116,32 +114,24 @@ class TEVCalculator:
             j_list = [j for j in range(num_atoms) if atom_list[j] in self.atom_types and j != i]
             jk_combinations = itertools.combinations_with_replacement(j_list, 2)
             for j, k in jk_combinations:
-                # extract r_ji and r_ki, R_ji_list now stores the cutoff function
-                r_ji = r_ji_list[j] * R_ji_list[j]
-                r_ki = r_ji_list[k] * R_ji_list[k]
+                # extract r_ji and r_ki
+                r_ji = r_ji_list[j]
+                r_ki = r_ji_list[k]
 
-                # Calculate the angel theta between r_ji and r_ki
-                cos_theta = np.dot(r_ji, r_ki)
-                theta = np.arccos(cos_theta)
-
-                # calculate index of TEVs, offset by 2 due to the trace
-                index_jk_start = (atom_type_list[j] * len(self.atom_types) + atom_type_list[k]) * self.dim_direction_m + self.dim_magnitude + 2
-                index_jk_end = index_jk_start + self.dim_direction_m
-                index_kj_start = (atom_type_list[k] * len(self.atom_types) + atom_type_list[j]) * self.dim_direction_m + self.dim_magnitude + 2
-                index_kj_end = index_kj_start + self.dim_direction_m
-                
-
+                # calculate index of TEVs, offset by 1 due to the trace
+                index_jk = atom_type_list[j] * len(self.atom_types) + atom_type_list[k] + self.dim_magnitude + 2
+                index_kj = atom_type_list[k] * len(self.atom_types) + atom_type_list[j] + self.dim_magnitude + 2
                 # calculate r_ji^T * DIA * r_ki
-                # TEVs[i, index_jk_start:index_jk_end] += r_ki^T * DIA * r_ji * (1 + cos(2 * theta - theta_m_values))^xi, theta_m_values is an array
-                TEVs[i, index_jk_start:index_jk_end] += np.dot(np.dot(r_ji, DIA), r_ki) * (1 + np.cos(2 * theta - self.theta_m_values))**self.xi
-                TEVs[i, index_kj_start:index_kj_end] += np.dot(np.dot(r_ki, DIA), r_ji) * (1 + np.cos(2 * theta - self.theta_m_values))**self.xi
+                TEVs[i, index_jk] += np.dot(np.dot(r_ji, DIA), r_ki)
+                TEVs[i, index_kj] += np.dot(np.dot(r_ki, DIA), r_ji)
                 # calculate r_ji^T * PARA * r_ki
-                TEVs[i, self.dim_direction_tensor + index_jk_start: self.dim_direction_tensor + index_jk_end] += np.dot(np.dot(r_ji, PARA), r_ki) * (1 + np.cos(2 * theta - self.theta_m_values))**self.xi
-                TEVs[i, self.dim_direction_tensor + index_kj_start: self.dim_direction_tensor + index_kj_end] += np.dot(np.dot(r_ki, PARA), r_ji) * (1 + np.cos(2 * theta - self.theta_m_values))**self.xi
+                TEVs[i, self.dim_direction_tensor + index_jk] += np.dot(np.dot(r_ji, PARA), r_ki)
+                TEVs[i, self.dim_direction_tensor + index_kj] += np.dot(np.dot(r_ki, PARA), r_ji)
 
                 # print(j ,k, index_jk, index_kj,TEVs[i, index_jk], TEVs[i, index_kj], TEVs[i, self.dim_direction_tensor + index_jk], TEVs[i, self.dim_direction_tensor + index_kj])
-        TEVs[:, 2 + self.dim_magnitude:] *=  2**(1-self.xi) 
+
         return TEVs
+
 
 
 orca_tensor_columns = ['DIA00', 'DIA01', 'DIA02', 'DIA10', 'DIA11', 'DIA12', 'DIA20', 'DIA21', 'DIA22',
@@ -170,9 +160,9 @@ if __name__ == '__main__':
         wB97XV = pickle.load(f)
     one_mol = wB97XV['ns372_1']
     # one_mol = pd.read_csv('../../rotation/0_0_0.csv', index_col = 0)
-    # print(one_mol)
+    print(one_mol)
     TEV_generator = TEV_generator()
-    print(TEV_generator.generate_TEVs(one_mol)[1][66:])
+    print(TEV_generator.generate_TEVs(one_mol)[1])
 
     # aev_h5_handle = h5py.File("../local/ns372/tev.hdf5", "w")
     # for mol_name in wB97XV: 

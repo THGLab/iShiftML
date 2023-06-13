@@ -1,18 +1,19 @@
 general:
   me: config.yml
-  device: cuda:0  # a device to be used for training the model, can be cuda:x or cpu
+  # device: [cuda:0, cuda:1]
+  device: cuda:0
   driver: run.py
-  output: [local/orca/wb97xv-AL6/O , 1] # root, iter
+  output: [H/ , 0] # root, iter
+  seed: 1
 
 data:
-  root: /global/homes/j/jerryli/project/nmr_Composite/samples/processed_data
+  root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
   # all options: B97-D_pcS-1, B97M-V_pcSseg-1, composite_middle, SCAN_pcSseg-1, wB97X-V_pcSseg-1
   input_lot: wB97X-V_pcSseg-1
   target_lot: composite_high
   shift_types: 1
-  combine_efs_solip: True  # should always be True
-  splitting: pscratch/sd/j/jerryli/NMR_QM/data_splits/splitting_5HA_test.txt  
-  # a splitting file that defines train, validation and test data. Examples are under iShiftML/data_splits
+  combine_efs_solip: True
+  splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/1-7HA_0.txt
 
 model:
   value_network_size: 50
@@ -25,9 +26,11 @@ training:
   shuffle: True
   drop_last: False
   lr: 1.0e-3
-  lr_scheduler: [plateau, 20, 20, 0.7, 1.0e-6] 
   # when validation error does not decrease in 20 epochs, decrease learning rate to 70%, 
   # unless learning rate is smaller than 1e-6
+  lr_scheduler: [plateau, 20, 20, 0.7, 1.0e-6]
+  # lr_scheduler: [decay, 0.05]
+  # lr_scheduler: null
   weight_decay: 3.0e-5
   dropout: 0.1
 
