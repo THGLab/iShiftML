@@ -1,0 +1,28 @@
+# Dataset and related scripts for training the iShiftML model
+## Dataset process scripts
+`combine_pkls.py` is a handy tool to combine multiple `.pkl` files into one.
+
+`create_geometric_data.py` generates the pickle files and hdf5 files for storing the geometric data for the molecules, including all the aev vectors, all coordinate vectors and atom types
+
+`create_pkl.py` is used for preparing pickle files about QM calculations needed for model training.
+
+## Dataset
+Extract xyz files from `sampled_xyzs.tgz` using ```tar -xvzf sampled_xyzs.tgz```, and you will get xyz files stored in a tree structure: `{n}_atoms/mol_{m}/{k}.xyz`. You can use these xyz files to calculate the low level and high level chemical shieldings and the QM features. Result files should be converted to `.csv` format with the following columns for low level inputs:
+
+[atom_idx, atom_symbol, x, y, z, wB97X-V_pcSseg-1, DIA00, DIA01, DIA02, DIA10, DIA11, DIA12, DIA20, DIA21, DIA22, PARA00, PARA01, PARA02, PARA10, PARA11, PARA12, PARA20, PARA21, PARA22] 
+
+The geometric features can be created from the `.xyz` files using `create_geometric_data.py`, and the QM features can be created from the `.csv` files using `create_pkl.py`. If multiple pickle files are generated, you can combine them using `combine_pkls.py`.
+
+When the dataset preparation is complete, you should have the following files under `processed_data` folder:
+- `aev.hdf5`
+- `atomic.pkl`
+- `wB97X-V_pcSseg-1.pkl`
+- `composite_high.pkl`
+
+## Dataset splits and indices
+All data subsampled from ANI-1 that passes the stability check are in `DS-SS.txt`, which has 94,639 molecules in total. The active-learning selected data are in `DS-SS.txt`, which contains 12,677 molecules up to 4 heavy atoms, 1500 molecules with 5 heavy atoms, 1498 molecules with 6 heavy atoms, 1503 molecules with 7 heavy atoms, and 82 molecules with 8 heavy atoms.
+
+The active learning and ensemble data splittings can be found under `data_splits`.
+
+## Training models
+Details about model training can be found in `iShiftML/README.md`.
