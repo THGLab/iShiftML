@@ -96,7 +96,7 @@ def xyzfile_from_low_level_QM(low_level_QM_file, save_folder, name):
         f.write(df[['atom_symbol', 'x', 'y', 'z']].to_string(header=False, index=False))
     return xyzfile
 
-def prepare_data(low_level_QM_file, low_level_theory, need_tev = False, xyz_file=None, high_level_QM_calculation=None, high_level_theory =None, name=None, prediction_index =None, save_folder='./temp'):
+def prepare_data(low_level_QM_file, low_level_theory, without_tev = False, xyz_file=None, high_level_QM_calculation=None, high_level_theory =None, name=None, prediction_index =None, save_folder='./temp'):
     if name is None:
         name = os.path.basename(low_level_QM_file).split(".")[0]
     os.makedirs(save_folder, exist_ok=True)
@@ -120,7 +120,7 @@ def prepare_data(low_level_QM_file, low_level_theory, need_tev = False, xyz_file
         
     df = pd.read_csv(low_level_QM_file)
     # Write Tensor environment variables
-    if need_tev:
+    if not without_tev:
         TEV_generator = rotinv.TEV_generator()
         tev = TEV_generator.generate_TEVs(df)
         tev_h5_handle = h5py.File(os.path.join(save_folder, "tev.hdf5"), "w")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
         parser.add_argument("low_level_QM_file")
         parser.add_argument("--xyz_file", default=None, help="The xyz file for the molecule")
-        parser.add_argument("--need_tev", action="store_true", help="whether to calculate Tensor environment variables")
+        parser.add_argument("--without_tev", action="store_true", help="whether to calculate Tensor environment variables")
         parser.add_argument("--low_level_theory", default="wB97X-V_pcSseg-1")
         parser.add_argument("--high_level_QM_calculation", default=None, help="When provided, high level data will also be prepared")
         parser.add_argument("--high_level_theory", default="composite_high", help="Level of theory for the high level method")
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         return args
 
     args = parse_args()
-    prepare_data(args.low_level_QM_file, args.low_level_theory, args.need_tev, args.xyz_file, args.high_level_QM_calculation, args.high_level_theory, args.name, args.prediction_index, args.save_folder)
+    prepare_data(args.low_level_QM_file, args.low_level_theory, args.without_tev, args.xyz_file, args.high_level_QM_calculation, args.high_level_theory, args.name, args.prediction_index, args.save_folder)
     # os.makedirs(args.save_folder, exist_ok=True)
     # needed_indices = convert_index(args)
 
