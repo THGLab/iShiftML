@@ -48,6 +48,7 @@ def parse_args():
 # model_path = f"/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/scripts/active_learning/7/{atom}"
 
 args = parse_args()  
+
 if args.input_folder is None and args.low_level_QM_file is None:
     raise ValueError("Please provide either input_folder or low_level_QM_file")
 if args.input_folder is not None and args.low_level_QM_file is not None:
@@ -86,7 +87,7 @@ if args.has_target:
 else:
     required_data = [args.low_level_theory]
 
-data_collection = NMRData(required_data, data_path=data_path, quiet=False, with_tev=args.with_tev)
+data_collection = NMRData(required_data, data_path=data_path, quiet=False, with_tev=(not args.without_tev))
 data_collection.read_data_splitting(data_split_file)
 
 test_data_categories = [item for item in data_collection.splits if "test" in item]
