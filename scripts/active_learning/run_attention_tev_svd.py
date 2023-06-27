@@ -26,7 +26,7 @@ from nmrpred.utils.get_gpu import handle_gpu
 from nmrpred.train import Trainer
 
 from nmrpred.models.MLP import AEVMLP
-from nmrpred.models.metamodels import Attention_TEV
+from nmrpred.models.metamodels import Attention_TEV_SVD
 from nmrpred.models.decoders import AttentionMask
 from functools import partial
 
@@ -57,20 +57,21 @@ print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shif
 # print('target hash:', data_collection.hash)
 
 # model
-
+AEV_output_dim = 128
 dropout = settings['training']['dropout']
-feature_extractor = AEVMLP([384, 128, 128], dropout)
-feature_dim = 96
+feature_extractor = AEVMLP([384, 128, AEV_output_dim], dropout)
 with_low_level_inputs = settings['model'].get('with_low_level_inputs', False)
-if with_low_level_inputs:
-    feature_dim += 1
 
+dim_1tensor = 80
+dim_overall = 86
+weight_input_dim = AEV_output_dim + dim_1tensor*3 + dim_overall
+bias_input_dim = AEV_output_dim + dim_1tensor*2 + dim_overall
+attention_output_dim = 1
 
-attention_input_dim = 128 + feature_dim
-attention_output_dim = 3
-
-attention_mask_network = AttentionMask([attention_input_dim, 128, 64, 16, attention_output_dim], dropout)
-model = Attention_TEV(feature_extractor, attention_mask_network, dim_tev_off = 2, with_low_level_input=with_low_level_inputs)
+DIA_attention_net = AttentionMask([weight_input_dim, 128, 64, 16, attention_output_dim], dropout)
+PARA_attention_net = AttentionMask([weight_input_dim, 128, 64, 16, attention_output_dim], dropout)
+Bias_attention_net = AttentionMask([bias_input_dim, 128, 64, 16, attention_output_dim], dropout)
+model = Attention_TEV_SVD(feature_extractor, DIA_attention_net, PARA_attention_net, Bias_attention_net, dim_1tensor = dim_1tensor, with_low_level_input=with_low_level_inputs)
 
 
 # optimizer
