@@ -15,7 +15,7 @@ def calculate_eta_t_n(min_value, max_value, num_values):
     eta = 1 / ( gap**2)
     return eta, np.array([min_value + gap * i for i in range(num_values)])
 
-dimension_mag = {'DIA': 16, 'PARA': 16, 'ISO': 32 }
+dimension_mag = {'DIA': 8, 'PARA': 8, 'ISO': 32 }
 default_etas = {}
 default_t_n_values = {}
 for atomtype in [1, 6, 7, 8]:
@@ -36,7 +36,7 @@ class TEVCalculator:
     T' = R T R^T, R is a rotation matrix, T is the NMR shielding tensor
     Then r'^T T' r' = r^T R^T R T R^T R r = r^T T r
     '''
-    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None, xi=128, theta_m_values = np.array([(2*m+1)/32*np.pi for m in range(8)])):
+    def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None, xi=64, theta_m_values = np.array([(2*m+1)/16*np.pi for m in range(4)])):
         self.R_C =R_C
         if etas is None:
             self.etas = default_etas
@@ -189,22 +189,22 @@ if __name__ == '__main__':
     # with open('../local/wB97X-V_pcSseg-1_ns372.pkl', 'rb') as f:
     #     wB97XV = pickle.load(f)
     # one_mol = wB97XV['ns372_1']
-    one_mol = pd.read_csv('../../rotation/0_0_45.csv', index_col = 0)
-    print(one_mol)
-    TEV_generator = TEV_generator()
-    result = TEV_generator.generate_TEVs(one_mol)[1]
+    # one_mol = pd.read_csv('../../rotation/0_0_45.csv', index_col = 0)
+#     print(one_mol)
+#     TEV_generator = TEV_generator()
+#     result = TEV_generator.generate_TEVs(one_mol)[1]
 
-    print('shape', result.shape)
-    print('singular value', result[:6])
-    # Print the tensor  DIA1, DIA2, DIA3, PARA1, PARA2, PARA3
-    names = ['DIA1', 'DIA2', 'DIA3', 'PARA1', 'PARA2', 'PARA3']
-    for i in range(6):
-        print(names[i])
-        print(result[6 + i * 80:6 + (i+1) * 80].reshape((5, 16)))
-    print('ISO')
-    print(result[486:486+32])
-    print('interation')
-    print(result[518:].reshape((6, 9)))
+#     print('shape', result.shape)
+    # print('singular value', result[:6])
+    # # Print the tensor  DIA1, DIA2, DIA3, PARA1, PARA2, PARA3
+    # names = ['DIA1', 'DIA2', 'DIA3', 'PARA1', 'PARA2', 'PARA3']
+    # for i in range(6):
+    #     print(names[i])
+    #     print(result[6 + i * 80:6 + (i+1) * 80].reshape((5, 16)))
+    # print('ISO')
+    # print(result[486:486+32])
+    # print('interation')
+    # print(result[518:].reshape((6, 9)))
 
 
     # aev_h5_handle = h5py.File("../local/ns372/tev.hdf5", "w")

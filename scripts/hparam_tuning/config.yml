@@ -6,13 +6,13 @@ general:
   output: [local/H , 1] # root, iter
 
 data:
-  root: /data/jerry/NMR_QM/processed_data
+  root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
   # all options: B97-D_pcS-1, B97M-V_pcSseg-1, composite_middle, SCAN_pcSseg-1, wB97X-V_pcSseg-1
   input_lot: wB97X-V_pcSseg-1
   target_lot: composite_high
   shift_types: 1
   combine_efs_solip: True
-  splitting: /home/jerry/data/NMR_QM/NMR_QM/data_splits/splitting_6HA_1.txt
+  splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/AL/1-7HA_0.txt
 
 model:
   network_dim: 64
@@ -32,6 +32,7 @@ training:
   optimizer: Adam
   dropout: 0.1
   momentum: 0.95
+  random_rotation: True
 
 checkpoint:
   log: 1

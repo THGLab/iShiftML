@@ -55,7 +55,8 @@ generators = data_collection.get_data_generator(atom=settings['data']['shift_typ
                                 combine_efs_solip=settings['data']['combine_efs_solip'],
                                 splitting=list(data_collection.splits),
                                 batch_size=settings['training']['batch_size'],
-                                collate_fn=partial(batch_dataset_converter, device=device[0]))
+                                collate_fn=partial(batch_dataset_converter, device=device[0]),
+                                random_rotation=settings['training']['random_rotation'])
                                 
 # data_collection = parse_nmr_data_aev(settings,device[0])
 print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shift_types'],

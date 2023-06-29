@@ -48,12 +48,10 @@ class Attention(nn.Module):
         attention_inputs = torch.cat([encoded_structures, tensorial_inputs], dim=-1)
         attention_masks = self.attention_mask_network(attention_inputs)
         final_predictions = torch.sum(tensorial_inputs * attention_masks[:, :-1], dim=-1) + attention_masks[:, -1]
-        return final_predictions
-
-	# if self.return_attention_masks:
-        #    return final_predictions, attention_masks
-        # else:
-        #    return final_predictions
+        if self.return_attention_masks:
+            return final_predictions, attention_masks
+        else:
+            return final_predictions
 
 class FeatureSupplementary(nn.Module):
     def __init__(self, structure_encoder, output_network):
@@ -138,7 +136,7 @@ class Attention_TEV(nn.Module):
 
 
 class Attention_TEV_SVD(nn.Module):
-    def __init__(self, structure_encoder, DIA_attention, PARA_attention, Bias_attention, dim_1tensor = 80,mol_based=False, with_low_level_input=False, return_attention_masks=False):
+    def __init__(self, structure_encoder, DIA_attention, PARA_attention, Bias_attention, dim_1tensor = 40,mol_based=False, with_low_level_input=False, return_attention_masks=False):
         """
         A Network like attention but with a TEV input replacing the tensorial features
         """
