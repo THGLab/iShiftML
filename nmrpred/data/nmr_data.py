@@ -287,13 +287,13 @@ class NMRData:
                             batch["labels"] = [data_dict[key][i] for i in batch_idx]
                         else:
                             batch[key] = data_dict[key][batch_idx]
-                            
-                    # generate random degrees for rotation
-                    d_x = np.random.uniform(0, 2 * np.pi)
-                    d_y = np.random.uniform(0, 2 * np.pi)
-                    d_z = np.random.uniform(0, 2 * np.pi)
-                    # apply tensor_rotation to each element in batch["tensor_features"]
-                    tensor_rotation(batch["tensor_features"], d_x, d_y, d_z, degrees=False)
+                    if random_rotation:
+                        # generate random degrees for rotation
+                        d_x = np.random.uniform(0, 2 * np.pi)
+                        d_y = np.random.uniform(0, 2 * np.pi)
+                        d_z = np.random.uniform(0, 2 * np.pi)
+                        # apply tensor_rotation to each element in batch["tensor_features"]
+                        tensor_rotation(batch["tensor_features"], d_x, d_y, d_z, degrees=False)
 
                     if collate_fn is not None:
                         batch = collate_fn(batch)

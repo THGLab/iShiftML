@@ -12,7 +12,7 @@ data:
   target_lot: composite_high
   shift_types: 1
   combine_efs_solip: True
-  splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/AL/1-7HA_0.txt
+  splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/1-7HA_0.txt
 
 model:
   network_dim: 64

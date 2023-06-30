@@ -477,7 +477,10 @@ class Trainer:
             if type(test_generators) is not list:
                 test_generators = [test_generators]
                 test_steps = [test_steps]
-
+                
+        #initialize
+        test_errors = []
+        test_exclusion_rates = []
         while 1:
             t0 = time.time()
 
@@ -613,7 +616,8 @@ class Trainer:
                 )
 
                 
-
+                print(test_generators)
+                print(self.epoch, last_test_epoch, self.check_test)
                 # save test predictions
                 if test_generators is not None and self.epoch - last_test_epoch >= self.check_test:
                     test_errors = []
