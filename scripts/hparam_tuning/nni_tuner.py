@@ -18,7 +18,6 @@ search_space = {
     'lr_decay': {'_type': 'uniform', '_value': [0.1, 0.9]},
     'weight_decay': {'_type': 'loguniform', '_value': [1e-6, 1e-2]},
     'dropout': {'_type': 'uniform', '_value': [0, 0.75]},
-    'optimizer': {'_type': 'choice', '_value': ['Adam', 'SGD']},
     'momentum': {'_type': 'uniform', '_value': [0, 1]},
 }
 
@@ -29,7 +28,7 @@ experiment.config.trial_code_directory = Path(__file__).parent
 experiment.config.search_space = search_space
 experiment.config.tuner.name = 'Anneal'
 experiment.config.max_trial_number = 128
-experiment.config.trial_concurrency = 8
+experiment.config.trial_concurrency = 2
 
 # Run it!
 experiment.run(port=8080, wait_completion=False)

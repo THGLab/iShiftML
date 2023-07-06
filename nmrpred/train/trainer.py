@@ -14,6 +14,7 @@ from nmrpred.utils.torch_util import set_model_parameters
 from itertools import chain
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
+from nmrpred.train.early_stopper import EarlyStopper
 
 
 class Trainer:
@@ -45,7 +46,8 @@ class Trainer:
                  preempt=False,
                  test_names=None,
                  use_resample_algorithm=False,
-                 nni_module=None):
+                 nni_module=None,
+                 early_stop_settings=None):
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
@@ -112,6 +114,11 @@ class Trainer:
         else:
             self.nni_trainer = False
             tb_log_path = self.output_path
+
+        if early_stop_settings is not None:
+            self.early_stopper = EarlyStopper(patience=early_stop_settings[0], min_delta=early_stop_settings[1])
+        else:
+            self.early_stopper = None
         self.summary_writer = SummaryWriter(tb_log_path)
         
             
@@ -243,9 +250,9 @@ class Trainer:
     def store_checkpoint(self, input, steps):
         # csv logging
         self.log_loss['epoch'].append(self.epoch)
-        for k in input:
-            self.log_loss[k].append(input[k])
-
+        for k in self.log_loss:
+            if k != 'epoch':
+                self.log_loss[k].append(input.get(k, np.nan))
 
         df = pd.DataFrame(self.log_loss)
         df.applymap('{:.5f}'.format).to_csv(os.path.join(
@@ -616,8 +623,8 @@ class Trainer:
                 )
 
                 
-                print(test_generators)
-                print(self.epoch, last_test_epoch, self.check_test)
+                # print(test_generators)
+                # print(self.epoch, last_test_epoch, self.check_test)
                 # save test predictions
                 if test_generators is not None and self.epoch - last_test_epoch >= self.check_test:
                     test_errors = []
@@ -642,6 +649,7 @@ class Trainer:
                 elif self.lr_scheduler[0] == 'decay':
                     self.scheduler.step()
                     accum_val_loss = 0.0
+
 
             # logging
             if self.epoch % self.check_log == 0:
@@ -669,6 +677,12 @@ class Trainer:
                 if self.nni_trainer:
                     self.nni_module.report_intermediate_result(metric)
         
+
+            # early stopping
+            if self.early_stopper is not None:
+                if self.early_stopper.early_stop(val_error):
+                    print("Early stopping")
+                    return metric
         return metric
 
     def log_statistics(self, splits, normalizer, target_hash=None):

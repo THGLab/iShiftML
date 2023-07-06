@@ -3,29 +3,30 @@ general:
   # device: [cuda:0, cuda:1]
   device: auto
   driver: run.py
-  output: [local/H , 1] # root, iter
+  output: [local/N , 1] # root, iter
 
 data:
-  root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
+  root: /home/jerry/data/NMR_QM/processed_data
   # all options: B97-D_pcS-1, B97M-V_pcSseg-1, composite_middle, SCAN_pcSseg-1, wB97X-V_pcSseg-1
   input_lot: wB97X-V_pcSseg-1
   target_lot: composite_high
-  shift_types: 1
+  shift_types: 7
   combine_efs_solip: True
-  splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/1-7HA_0.txt
+  splitting: /home/jerry/data/NMR_QM/iShiftML/data_splits/1-7HA_0.txt
 
 model:
   network_dim: 64
 
 training:
   allow_preempt: False
-  epochs: 750
+  epochs: 1500
   batch_size: 128
   resample: False
   shuffle: True
   drop_last: False
   lr: 1.0e-3
   lr_scheduler: [plateau, 20, 20, 0.7, 1.0e-6]
+  early_stop: [30, 0]
   # lr_scheduler: [decay, 0.05]
   # lr_scheduler: null
   weight_decay: 3.0e-5

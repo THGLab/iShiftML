@@ -17,6 +17,12 @@ from nmrpred.models.decoders import AttentionMask
 from functools import partial
 
 import nni
+import random
+import time
+
+# random wait 1-10s
+time.sleep(random.randint(1, 10))
+
 
 
 torch.set_default_tensor_type(torch.FloatTensor)
@@ -34,9 +40,9 @@ settings["training"]["batch_size"] = tuned_params["bs"]
 settings["training"]["lr"] = tuned_params["lr"]
 settings["training"]["lr_scheduler"][-2] = tuned_params["lr_decay"]
 settings["training"]["weight_decay"] = tuned_params["weight_decay"]
-settings["training"]["optimizer"] = tuned_params["optimizer"]
 settings["training"]["dropout"] = tuned_params["dropout"]
 settings["training"]["momentum"] = tuned_params["momentum"]
+
 
 # device
 if type(settings['general']['device']) is list:
@@ -119,9 +125,10 @@ trainer = Trainer(model=model,
                   preempt=settings['training']['allow_preempt'],
                   test_names=test_names,
                   save_validation_data=True,
+                  early_stop_settings=settings['training']['early_stop'],
                   nni_module=nni)
 
-trainer.print_layers()
+# trainer.print_layers()
 # trainer.log_statistics(data_collection)
 
 # tr_steps=10; val_steps=10; test_steps=10
