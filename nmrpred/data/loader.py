@@ -13,6 +13,7 @@ def batch_dataset_converter(input, device):
                         "AM": torch.long,
                         "RM": torch.float32,
                         "aev": torch.float32,
+                        "tev": torch.float32,
                         "cs_scaler": torch.float32,
                         "D": torch.float32,
                         "V": torch.float32,

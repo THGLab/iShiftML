@@ -37,8 +37,39 @@ def default_data_filter(input_arr, atom_type):
     final_filter = non_nan_filter & upper_filter & lower_filter & non_zero_filter
     return final_filter
 
+def tensor_rotation(tensor,d_x,d_y,d_z, degrees=True):
+    # rotate shielding tensors by d_x, d_y, d_z in degrees
+    # tensor should be [:,18]
+
+    #build the rotation matrix for xyz
+    if degrees:
+        d_x = d_x*np.pi/180
+        d_y = d_y*np.pi/180
+        d_z = d_z*np.pi/180
+    sin_x = np.sin(d_x)
+    cos_x = np.cos(d_x)
+    sin_y = np.sin(d_y)
+    cos_y = np.cos(d_y)
+    sin_z = np.sin(d_z)
+    cos_z = np.cos(d_z)
+
+    rotate_x = np.matrix([[1,0,0],[0,cos_x,sin_x],[0,-sin_x,cos_x]])
+    rotate_y = np.matrix([[cos_y,0,-sin_y],[0,1,0],[sin_y,0,cos_y]])
+    rotate_z = np.matrix([[cos_z,sin_z,0],[-sin_z,cos_z,0],[0,0,1]])
+    rotate_total = rotate_x * rotate_y * rotate_z
+    
+    #build the rotation matrix for shielding
+    hess_tensor_rotate = np.kron(rotate_total,rotate_total).T
+    # create an 18x18 matrix by putting two hess_tensor_rotate matrices together
+    B = np.block([[hess_tensor_rotate, np.zeros((9, 9))], [np.zeros((9, 9)), hess_tensor_rotate]])
+
+    # rotate in place
+    np.matmul(tensor, B, out=tensor)
+    
+    return
+
 class NMRData:
-    def __init__(self, theory_levels, with_aev=True, data_path="/home/jerry/data/NMR_QM/processed_data", quiet=True) -> None:
+    def __init__(self, theory_levels, with_aev=True, with_tev=False, data_path="/home/jerry/data/NMR_QM/processed_data", quiet=True) -> None:
         with open(join(data_path, "atomic.pkl"), "rb") as f:
             self.atomic = pickle.load(f)
         file_ids = set(self.atomic)
@@ -49,6 +80,11 @@ class NMRData:
             #     self.aev = pickle.load(f)
         else:
             self.with_aev = False
+        if with_tev:
+            self.with_tev = True
+            self.tev = h5py.File(join(data_path, "tev.hdf5"), "r")
+        else:
+            self.with_tev = False
         self.qm_values = {}
         for theory_level in theory_levels:
             with open(join(data_path, theory_level + ".pkl"), "rb") as f:
@@ -171,6 +207,11 @@ class NMRData:
                         return_dict["aev"] = list(self.aev[idx][filter, 1:])
                     else:
                         return_dict["aev"].extend(self.aev[idx][filter, 1:])
+                if self.with_tev:
+                    if "tev" not in return_dict:
+                        return_dict["tev"] = list(self.tev[idx][filter, :])
+                    else:
+                        return_dict["tev"].extend(self.tev[idx][filter, :])
                 if input_level is not None:
                     input_cs_values = self.qm_values[input_level][idx][input_level].values
                     if "low_level_inputs" not in return_dict:
@@ -210,7 +251,7 @@ class NMRData:
             self.prepared_data[(atom, tensor_level, target_level, combine_efs_solip, splitting)] = return_dict, n_total_data
         return return_dict, n_total_data
 
-    def get_data_generator(self, atom=None, input_level=None, tensor_level=None, target_level=None, combine_efs_solip=True, splitting=None, batch_size=128, collate_fn=None):
+    def get_data_generator(self, atom=None, input_level=None, tensor_level=None, target_level=None, combine_efs_solip=True, splitting=None, batch_size=128, collate_fn=None, random_rotation=True):
         "returns the data generator and the number of steps for each epoch"
         # when splitting is provided as a list, prepare all data generators
         if type(splitting) is list:
@@ -240,11 +281,20 @@ class NMRData:
                 for step in range(n_steps):
                     batch_idx = indices[step * batch_size: (step+1) * batch_size]
                     batch = {}
+
                     for key in data_dict:
                         if key == "labels":
                             batch["labels"] = [data_dict[key][i] for i in batch_idx]
                         else:
                             batch[key] = data_dict[key][batch_idx]
+                    if random_rotation:
+                        # generate random degrees for rotation
+                        d_x = np.random.uniform(0, 2 * np.pi)
+                        d_y = np.random.uniform(0, 2 * np.pi)
+                        d_z = np.random.uniform(0, 2 * np.pi)
+                        # apply tensor_rotation to each element in batch["tensor_features"]
+                        tensor_rotation(batch["tensor_features"], d_x, d_y, d_z, degrees=False)
+
                     if collate_fn is not None:
                         batch = collate_fn(batch)
                     yield batch

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # iShiftML: Highly Accurate Prediction of NMR Chemical Shifts from Low-Level Quantum Mechanics Calculations Using Machine Learning
 
 ## Authors 
@@ -34,70 +35,58 @@ Please note that this is a developer version, and thus you should reinstall the 
 Otherwise, you always use the previously installed version of this library.
 
 ## Usage
-### Step 1: Prepare data
-Run `iShiftML/scripts/predict/prepare_data.py` to prepare data for making predictions. The full usage note is given below:
-```python
-usage: prepare_data.py [-h] [--low_level_theory LOW_LEVEL_THEORY] [--high_level_QM_calculation HIGH_LEVEL_QM_CALCULATION] [--high_level_theory HIGH_LEVEL_THEORY] [--name NAME]
-                       [--prediction_index PREDICTION_INDEX] [--save_folder SAVE_FOLDER]
-                       xyz_file low_level_QM_calculation
+### To predict the shifts of a single molecule
+Run `iShiftML/scripts/predict/ensemble_prediction.py` to make predictions using ensemble model, or run `iShiftML/scripts/predict/single_prediction.py` to predict using a single model (not recommended).
 
-positional arguments:
-  xyz_file
-  low_level_QM_calculation
+```python
+usage: ensemble_prediction.py [-h] [--input_folder INPUT_FOLDER] [--split_file SPLIT_FILE] [--low_level_QM_file LOW_LEVEL_QM_FILE] [--xyz_file XYZ_FILE] [-e ELEMENT] [--model_path MODEL_PATH]
+                              [--low_level_theory LOW_LEVEL_THEORY] [--target_level_theory TARGET_LEVEL_THEORY] [--name NAME] [--scratch_folder SCRATCH_FOLDER] [--output_folder OUTPUT_FOLDER] [--has_target]
+                              [--include_low_level] [--batch_size BATCH_SIZE] [--device DEVICE] [--without_tev]
 
 optional arguments:
   -h, --help            show this help message and exit
+  --input_folder INPUT_FOLDER
+                        The folder to store all input data. This is to predict multiple molecules
+  --split_file SPLIT_FILE
+                        The file tell which molecules to predict when predicting multiple molecules
+  --low_level_QM_file LOW_LEVEL_QM_FILE
+                        the low level QM calculation organized in csv format. This is to predict single molecule
+  --xyz_file XYZ_FILE   The xyz file for the molecule. Not needed if low_level_QM_file contains xyz info
+  -e ELEMENT, --element ELEMENT
+                        The element to predict
+  --model_path MODEL_PATH
+                        The path to the models folder
   --low_level_theory LOW_LEVEL_THEORY
-  --high_level_QM_calculation HIGH_LEVEL_QM_CALCULATION
-                        When provided, high level data will also be prepared
-  --high_level_theory HIGH_LEVEL_THEORY
-                        Level of theory for the high level method
+  --target_level_theory TARGET_LEVEL_THEORY
   --name NAME           Name of data. When not provided, infer from necessary input file names
-  --prediction_index PREDICTION_INDEX
-                        In the format of i.e. 0-8, where 8 is inclusive
-  --save_folder SAVE_FOLDER
-                        A folder to save the processed data
+  --scratch_folder SCRATCH_FOLDER
+                        A folder to save the scratch data generated in data preparation
+  --output_folder OUTPUT_FOLDER
+                        A folder to save the output
+  --has_target          When the high level target data has been prepared, setting this argument to True will add the high level target data in the prediction files.
+  --include_low_level   setting this argument to True will add the low level calculations to the prediction files.
+  --batch_size BATCH_SIZE
+                        The batch size for prediction
+  --device DEVICE       The device to use for prediction
+  --without_tev         whether the model is trained without tev. Setting this argument to True will ignore TEVs
 ```
-`xyz_file` is the molecule geometry file in xyz format. 
 
-`low_level_QM_calculation` is the low level QM calculation organized in csv format. The csv file should contain following columns:
+`low_level_QM_file` is the low level QM calculation organized in csv format. It is required to predict a single molecule. The csv file should contain following columns:
 
 [atom_idx, atom_symbol, x, y, z, wB97X-V_pcSseg-1, DIA00, DIA01, DIA02, DIA10, DIA11, DIA12, DIA20, DIA21, DIA22, PARA00, PARA01, PARA02, PARA10, PARA11, PARA12, PARA20, PARA21, PARA22] 
 
-If only part of the atoms need to be calculated, please specify the indices of the atoms required in `--prediction_index` argument.
+This prediction script will call `prepare_data.py` first to prepare data so keep the two scripts in the same folder. Its full usage can be seen by `python prepare_data.py -h`. When the code runs successfully, it will prepare all necessary files, including `predict_data.txt`, together with `aev.hdf5`, `atomic.pkl`, `wB97X-V_pcSseg-1.pkl` and `tev.hdf5` under default `processed_data` folder or specified folder. 
 
-When the code runs successfully, it will prepare all necessary files for running model inference under current folder or the folder specified by `--save_folder` argument. The files include `predict_data.txt`, together with `aev.hdf5`, `atomic.pkl` and `wB97X-V_pcSseg-1.pkl` under `processed_data` folder. 
+Once the prediction is made, a prediction `.csv` file will be generated under the specified `output_folder`, or by default the `./local` folder. The prediction file will contain the predicted chemical shieldings from each model in the ensemble, the mean and standard deviations with outliers excluded, together with the low level calculations and high level target data if specified.
 
-### Step 2: Make predictions
-Run `iShiftML/scripts/predict/ensemble_prediction.py` to make predictions using ensemble model, or run `iShiftML/scripts/predict/single_prediction.py` to predict using a single model.
-
+Usage examples:
+The following command predicts the chemical shielding of carbon for a molecule whose `low_level_QM_file` is `./temp/mol.csv`. It uses our trained TEV models and output to the folder `./local` 
 ```python
-usage: ensemble_prediction.py [-h] [--output_path OUTPUT_PATH] [--model_path MODEL_PATH] [--batch_size BATCH_SIZE] [--prediction_data PREDICTION_DATA] [--data_root DATA_ROOT]
-                              [--has_target] [--include_low_level]
-                              atom
-
-positional arguments:
-  atom                  The element to be predicted. One of H/C/N/O.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --output_path OUTPUT_PATH
-                        Path to save the output files. The prediction files will be named as 'ensemble_prediction_{atom}_{category}.csv'.
-  --model_path MODEL_PATH
-                        Path to the trained models.
-  --batch_size BATCH_SIZE
-                        Batch size for prediction.
-  --prediction_data PREDICTION_DATA
-                        Path to the file specifying data to be predicted.
-  --data_root DATA_ROOT
-                        Folder containing necessary data for prediction.
-  --has_target          When the high level target data has been prepared, setting this argument to True will add the high level target data in the prediction files.
-  --include_low_level   setting this argument to True will add the low level calculations to the prediction files.
+python ensemble_prediction.py --low_level_QM_file ./temp/mol.csv --model_path iShiftML/models --output_folder ./local --with_tev --include_low_level -e C 
 ```
 
-Once the prediction is made, a prediction `.csv` file will be generated under the specified `output_path`, or by default the `./local` folder. The prediction file will contain the predicted chemical shieldings from each model in the ensemble, the mean and standard deviations with outliers excluded, together with the low level calculations and high level target data if specified.
-
 `iShiftML/scripts/predict/single_prediction.py` is used to make predictions using a single model. You should check the settings in line 24-32 to make sure the settings are correct. You can then run the script without arguments to make predictions. 
+
 
 ### Optional: Batch processing and predicting
 `iShiftML/scripts/predict/process_and_predict.sh` is an example bash script to run predictions for multiple molecules in batch. The script will first prepare the data for prediction, and then make predictions using the ensemble model. You can change this code to fit your own needs.
@@ -121,3 +110,5 @@ your work is reviewed by at least one other contributor.
 - The documentation of the modules are available at most cases. Please look up local classes or functions and consult with the docstrings in the code.
 
 
+=======
+Machine Learning of Hydrogen Combustion Reaction. 
