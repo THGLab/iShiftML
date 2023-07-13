@@ -4,3 +4,5 @@ Predicting Density Functional Theory-Quality Nuclear Magnetic Resonance Chemical
 Pablo A. Unzueta, Chandler S. Greenwell, and Gregory J. O. Beran
 Journal of Chemical Theory and Computation 2021 17 (2), 826-840
 DOI: 10.1021/acs.jctc.0c00979
+
+rot_inv*.py are the scripts to calculate Tensor Environment Variables (TEV) of each atom, just like AEVs. These TEVs are calculated from the NMR shielding diamagnetic (DIA) and paramagnetic (PARA) tensors. Since AEVs are rotational-invariant, we only need to let TEVs be rotational-invariant to keep our model rotational-invariant. We tried many different methods to generate TEVs and found TEVs with dim = 98 or 194 work the best.

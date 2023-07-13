@@ -1,3 +1,10 @@
+'''
+Script for generating Tensor Environment Variables (TEV) of each atom from its NMR shielding diamagnetic (DIA) and paramagnetic (PARA) tensors.
+34 means the vector's dimension is 34, arranged as:
+[trace of DIA, trace of PARA, 4 x 4 (atom types) embedding of normalized DIA (direction part), 4 x 4 embedding of normalized PARA (direction part)]
+'''
+
+
 import numpy as np
 from numpy import linalg as LA
 import pandas as pd
