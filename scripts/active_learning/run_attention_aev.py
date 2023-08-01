@@ -1,8 +1,24 @@
-import os
-import sys
-import yaml
+import os, sys
 import numpy as np
 import torch
+from torch.optim import Adam, SGD
+import yaml
+from functools import partial
+
+
+from nmrpred.data.loader import batch_dataset_converter
+from nmrpred.utils.get_gpu import handle_gpu
+from nmrpred.train import Trainer
+
+from nmrpred.data.nmr_data import NMRData
+from nmrpred.models.MLP import AEVMLP
+from nmrpred.models.metamodels import Attention
+from nmrpred.models.decoders import AttentionMask
+from functools import partial
+
+
+torch.set_default_tensor_type(torch.FloatTensor)
+
 # first read in settings and fix random number seeds 
 settings_path = 'config.yml'
 if len(sys.argv) > 1:
@@ -13,25 +29,11 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 print("Using random seed", seed)
 
-
-
-from torch.optim import Adam
-
-from functools import partial
-from nmrpred.data.nmr_data import NMRData
-from nmrpred.data.loader import batch_dataset_converter
-from nmrpred.train import Trainer
-
-from nmrpred.models.MLP import AEVMLP
-from nmrpred.models.metamodels import Attention
-from nmrpred.models.decoders import AttentionMask
-from functools import partial
-
-
-
 # device
 if type(settings['general']['device']) is list:
     device = [torch.device(item) for item in settings['general']['device']]
+elif settings['general']['device'] == "auto":
+    device = [handle_gpu()]
 else:
     device = [torch.device(settings['general']['device'])]
 
@@ -45,7 +47,8 @@ generators = data_collection.get_data_generator(atom=settings['data']['shift_typ
                                 combine_efs_solip=settings['data']['combine_efs_solip'],
                                 splitting=list(data_collection.splits),
                                 batch_size=settings['training']['batch_size'],
-                                collate_fn=partial(batch_dataset_converter, device=device[0]))
+                                collate_fn=partial(batch_dataset_converter, device=device[0]),
+                                random_rotation=settings['training']['random_rotation'])
                                 
 # data_collection = parse_nmr_data_aev(settings,device[0])
 print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shift_types'],
@@ -55,20 +58,16 @@ print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shif
 # model
 
 dropout = settings['training']['dropout']
-feature_extractor = AEVMLP([384, 128, 128], dropout)
-feature_dim = 18
-with_low_level_inputs = settings['model'].get('with_low_level_inputs', False)
-if with_low_level_inputs:
-    feature_dim += 1
-if not settings['data'].get("combine_efs_solip", True):
-    feature_dim += 9
-
-
-attention_input_dim = 128 + feature_dim
-attention_output_dim = feature_dim + 1
-
-attention_mask_network = AttentionMask([attention_input_dim, 64, attention_output_dim], dropout)
-model = Attention(feature_extractor, attention_mask_network, with_low_level_input=with_low_level_inputs)
+network_dim = settings['model']['network_dim']
+feature_extractor = AEVMLP([384, 128, network_dim], dropout)
+if settings['data'].get("combine_efs_solip", True):
+    attention_input_dim = network_dim + 18
+    attention_output_dim = 19
+else:
+    attention_input_dim = network_dim + 27
+    attention_output_dim = 28
+attention_mask_network = AttentionMask([attention_input_dim, network_dim, attention_output_dim], dropout)
+model = Attention(feature_extractor, attention_mask_network)
 
 
 
