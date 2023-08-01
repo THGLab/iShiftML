@@ -20,7 +20,7 @@ import multiprocessing
 import argparse
 
 sys.path.append('/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/utils')
-import rotinv
+import rotinv_98
 
 atom_type_mapping={"H":"1","C":"6","N":"7","O":"8"}
 
@@ -121,7 +121,7 @@ def prepare_data(low_level_QM_file, low_level_theory, without_tev = False, xyz_f
     df = pd.read_csv(low_level_QM_file)
     # Write Tensor environment variables
     if not without_tev:
-        TEV_generator = rotinv.TEV_generator()
+        TEV_generator = rotinv_98.TEV_generator()
         tev = TEV_generator.generate_TEVs(df)
         tev_h5_handle = h5py.File(os.path.join(save_folder, "tev.hdf5"), "w")
         tev_h5_handle.create_dataset(name, data=tev[needed_indices])

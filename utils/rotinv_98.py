@@ -1,3 +1,11 @@
+'''
+Script for generating Tensor Environment Variables (TEV) of each atom from its NMR shielding diamagnetic (DIA) and paramagnetic (PARA) tensors.
+98 means the vector's dimension is 98, arranged as:
+[a, b, 16 interval embedding of a, 16 interval embedding of b, 32 interval embedding of a + b, 
+4 x 4 (atom types) embedding of normalized DIA (direction part), 4 x 4 embedding of normalized PARA (direction part)]
+, where a = trace of DIA / 3, b = trace of PARA / 3.
+'''
+
 import numpy as np
 from numpy import linalg as LA
 import pandas as pd
@@ -32,9 +40,11 @@ class TEVCalculator:
     '''
     Calculate the Tensor Environment Variables of a molecule, just like AEVs
     Need coordinates, atom_list, tensor_vecs 
-    We embed the each eigen vectors into a 4 (number of nuclei) * 4 (number of nuclei) dimensional vector
+    
+    For magnitude part, we embed each tensor into different intervals, like AEV's radial part
+    For direction part, we embed each tensor into a 4 (number of nuclei) * 4 (number of nuclei) dimensional vector
     We utilize the following facts:
-    r' = R r, R is a rotation matrix, r is the original coordinates
+    r' = R r, R is a rotation matrix, r is the original vector coordinates
     T' = R T R^T, R is a rotation matrix, T is the NMR shielding tensor
     Then r'^T T' r' = r^T R^T R T R^T R r = r^T T r
     '''

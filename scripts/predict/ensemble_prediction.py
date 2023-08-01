@@ -36,6 +36,7 @@ def parse_args():
     parser.add_argument("--batch_size", default=128, help="The batch size for prediction")
     parser.add_argument("--device", default="cpu", help="The device to use for prediction")
     parser.add_argument("--without_tev", action="store_true", help="whether the model is trained without tev. Setting this argument to True will ignore TEVs")
+    parser.add_argument("--self_trained_model", action="store_true", help="whether the model is trained by yourself. Setting this argument to True will change the model paths from model_path/element/*.pt to model_path/element/training_*/models/best_model.pt")
     
     args = parser.parse_args()
     if args.name is None and args.low_level_QM_file is not None:
@@ -110,7 +111,11 @@ for category in test_data_categories:
                                 
 ensemble_models = []
 # normalizers = []
-for model_file in glob(os.path.join(model_path, "training_*/models/best_model.pt")):
+model_star_path = os.path.join(model_path, "*.pt")
+if args.self_trained_model:
+    model_star_path = os.path.join(model_path, "training_*/models/best_model.pt")
+    
+for model_file in glob(model_star_path):
     model = torch.load(model_file, map_location=torch.device(args.device))
     ensemble_models.append(model.to(args.device))
     # normalizers.append(normalizer)

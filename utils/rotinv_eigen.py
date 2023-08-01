@@ -1,3 +1,10 @@
+'''
+Script for generating Tensor Environment Variables (TEV) of each atom from its NMR shielding diamagnetic (DIA) and paramagnetic (PARA) tensors.
+This script wants to calculate TEV by eigen-decomposition of the tensors. 
+However, these tensors are not symmetric and results in complex eigenvaluse and eigenvectors, not suitable as ML inputs.
+'''
+
+
 import numpy as np
 from numpy import linalg as LA
 import math
@@ -8,6 +15,7 @@ class TEVCalculator:
     '''
     Calculate the Tensor Environment Variables of a molecule, just like AEVs
     Need coordinates, atom_list, tensor_vecs 
+    
     Each nuclear has 6 NMR eigen vectors, 3 for paramagnetic and 3 for diamagnetic
     We embed the each eigen vectors into a 4 (number of nuclei) * 8 (number of theta) *4 (number of R_n) dimensional vector
     '''

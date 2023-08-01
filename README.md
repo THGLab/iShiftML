@@ -88,7 +88,7 @@ python ensemble_prediction.py --low_level_QM_file ./temp/mol.csv --model_path iS
 
 
 ### Optional: Batch processing and predicting
-`iShiftML/scripts/predict/process_and_predict.sh` is an example bash script to run predictions for multiple molecules in batch. The script will first prepare the data for prediction, and then make predictions using the ensemble model. You can change this code to fit your own needs.
+`iShiftML/scripts/predict/predict.sh` is an example bash script to run predictions for multiple molecules in batch.You can change this code to fit your own needs.
 
 
 ## Train models

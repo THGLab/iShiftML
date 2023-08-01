@@ -1,3 +1,17 @@
+'''
+Script for generating Tensor Environment Variables (TEV) of each atom from its NMR shielding diamagnetic (DIA) and paramagnetic (PARA) tensors.
+This script wants to calculate TEV by SVD decomposition of the tensors. 
+Each nuclear has 6 singular values and corresponding 6+6 (U and V^H) singular vectors.
+332 means the vector's dimension is 332, arranged as:
+
+Singular values of DIA and PARA (6);
+embedding of singular vectors of DIA and PARA (6*40): each has interval embedding of singular values (8), 4 (atom types) x 4 (angles between two chemical bonds) embedding of vh and uh singular vectors (32);
+embedding of total information: interval embedding of isotropic value (32), interaction between singular vectors (54)
+
+However, because the sum of singular values is not equal to the trace of original tensor, this method does not produce good results.
+'''
+
+
 import numpy as np
 from numpy import linalg as LA
 import pandas as pd
@@ -30,11 +44,7 @@ class TEVCalculator:
     '''
     Calculate the Tensor Environment Variables of a molecule, just like AEVs
     Need coordinates, atom_list, tensor_vecs 
-    We embed the each eigen vectors into a 4 (number of nuclei) * 4 (number of nuclei) dimensional vector
-    We utilize the following facts:
-    r' = R r, R is a rotation matrix, r is the original coordinates
-    T' = R T R^T, R is a rotation matrix, T is the NMR shielding tensor
-    Then r'^T T' r' = r^T R^T R T R^T R r = r^T T r
+    
     '''
     def __init__(self, atom_types = [1, 6, 7, 8] , R_C = 5.2, etas=None, t_n_values = None, xi=64, theta_m_values = np.array([(2*m+1)/16*np.pi for m in range(4)])):
         self.R_C =R_C

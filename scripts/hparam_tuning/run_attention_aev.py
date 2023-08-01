@@ -87,15 +87,9 @@ model = Attention(feature_extractor, attention_mask_network)
 
 # optimizer
 trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-if settings['training']['optimizer'] == 'Adam':
-    optimizer = Adam(trainable_params,
+optimizer = Adam(trainable_params,
                     lr=settings['training']['lr'],
                     weight_decay=settings['training']['weight_decay'])
-elif settings['training']['optimizer'] == 'SGD':
-    optimizer = SGD(trainable_params,
-                    lr=settings['training']['lr'],
-                    weight_decay=settings['training']['weight_decay'],
-                    momentum=settings['training']['momentum'])
 
 
 # scaled loss fn

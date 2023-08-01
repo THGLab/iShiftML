@@ -1,10 +1,9 @@
 general:
   me: config.yml
-  # device: [cuda:0, cuda:1]
   device: cuda:0
   driver: run.py
   output: [H/ , 0] # root, iter
-  seed: 1
+  seed: 5
 
 data:
   root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
@@ -16,31 +15,27 @@ data:
   splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/1-7HA_0.txt
 
 model:
-  value_network_size: 50
+  network_dim: 128
 
 training:
   allow_preempt: False
-  epochs: 750
-  batch_size: 128
+  epochs: 1500
+  batch_size: 32
   resample: False
   shuffle: True
   drop_last: False
-  lr: 1.0e-3
-  # when validation error does not decrease in 20 epochs, decrease learning rate to 70%, 
+  lr: 0.01
+  # when validation error does not decrease in 20 epochs, decrease learning rate to 70%,
   # unless learning rate is smaller than 1e-6
-  lr_scheduler: [plateau, 20, 20, 0.7, 1.0e-6]
-  # lr_scheduler: [decay, 0.05]
-  # lr_scheduler: null
-  weight_decay: 3.0e-5
+  lr_scheduler: [plateau, 20, 20, 0.4, 1.0e-6]
+  weight_decay: 1.0e-4
   dropout: 0.1
+  momentum: 0.3
+  random_rotation: True
 
 checkpoint:
   log: 1
   val: 1
   test: 5
-  model: 100
+  model: 50
   verbose: False
-
-
-
-

@@ -70,7 +70,7 @@ attention_input_dim = 128 + feature_dim
 attention_output_dim = 3
 
 attention_mask_network = AttentionMask([attention_input_dim, 128, 64, 16, attention_output_dim], dropout)
-model = Attention_TEV(feature_extractor, attention_mask_network, dim_tev_off = 2, with_low_level_input=with_low_level_inputs)
+model = Attention_TEV(feature_extractor, attention_mask_network, with_low_level_input=with_low_level_inputs)
 
 
 # optimizer
