@@ -1,3 +1,34 @@
+import argparse
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--low_level_QM_file", default=None, help="the low level QM calculation organized in csv format. This is to predict single molecule")
+    parser.add_argument("--xyz_file", default=None, help="The xyz file for the molecule. Not needed if low_level_QM_file contains xyz info")
+    parser.add_argument('-e', "--element", default="C", help="The element to predict")
+    parser.add_argument("--model_path", help="The path to the models folder", type=str, default="/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/scripts/active_learning/7")
+    parser.add_argument("--low_level_theory", default="wB97X-V_pcSseg-1")
+    parser.add_argument("--target_level_theory", default="composite_high")
+    parser.add_argument("--name", default=None, help="Name of data. When not provided, infer from necessary input file names")
+    parser.add_argument("--scratch_folder", default="processed_data", help="A folder to save the scratch data generated in data preparation")
+    parser.add_argument("--output_folder", default="local", help="A folder to save the output")
+    parser.add_argument("--has_target", action="store_true", help="When the high level target data has been prepared, \
+                        setting this argument to True will add the high level target data in the prediction files.")
+    parser.add_argument("--include_low_level", action="store_true", help="setting this argument to True \
+                        will add the low level calculations to the prediction files.")
+    parser.add_argument("--batch_size", default=128, help="The batch size for prediction")
+    parser.add_argument("--device", default="cpu", help="The device to use for prediction")
+    parser.add_argument("--without_tev", action="store_true", help="whether the model is trained without tev. Setting this argument to True will ignore TEVs, usually used when you are using original model or data_aug model.")
+    parser.add_argument("--self_trained_model", action="store_true", help="whether the model is trained by yourself. Setting this argument to True will change the model paths from model_path/element/*.pt to model_path/element/training_*/models/best_model.pt")
+    parser.add_argument("--input_folder", default=None, help="The folder to store all input data. This is to get the ensemble prediction result after preparing your data. Need to be used with --split_file. Need to be used with --self_trained_model if you are using your model. Could not be used together with --low_level_QM_file.")
+    parser.add_argument("--split_file", default=None, help="The file tell which molecules to predict when predicting multiple molecules")
+    
+    args = parser.parse_args()
+    if args.name is None and args.low_level_QM_file is not None:
+        args.name = os.path.basename(args.low_level_QM_file).split('.')[0]
+    return args
+
+args = parse_args()  
+
+
 import os
 import sys
 import numpy as np
@@ -15,37 +46,6 @@ from nmrpred.train import Trainer
 from functools import partial
 from tqdm import tqdm
 
-import argparse
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input_folder", default=None, help="The folder to store all input data. This is to predict multiple molecules")
-    parser.add_argument("--split_file", default=None, help="The file tell which molecules to predict when predicting multiple molecules")
-    parser.add_argument("--low_level_QM_file", default=None, help="the low level QM calculation organized in csv format. This is to predict single molecule")
-    parser.add_argument("--xyz_file", default=None, help="The xyz file for the molecule. Not needed if low_level_QM_file contains xyz info")
-    parser.add_argument('-e', "--element", default="C", help="The element to predict")
-    parser.add_argument("--model_path", help="The path to the models folder", type=str, default="/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/scripts/active_learning/7")
-    parser.add_argument("--low_level_theory", default="wB97X-V_pcSseg-1")
-    parser.add_argument("--target_level_theory", default="composite_high")
-    parser.add_argument("--name", default=None, help="Name of data. When not provided, infer from necessary input file names")
-    parser.add_argument("--scratch_folder", default="processed_data", help="A folder to save the scratch data generated in data preparation")
-    parser.add_argument("--output_folder", default="local", help="A folder to save the output")
-    parser.add_argument("--has_target", action="store_true", help="When the high level target data has been prepared, \
-                        setting this argument to True will add the high level target data in the prediction files.")
-    parser.add_argument("--include_low_level", action="store_true", help="setting this argument to True \
-                        will add the low level calculations to the prediction files.")
-    parser.add_argument("--batch_size", default=128, help="The batch size for prediction")
-    parser.add_argument("--device", default="cpu", help="The device to use for prediction")
-    parser.add_argument("--without_tev", action="store_true", help="whether the model is trained without tev. Setting this argument to True will ignore TEVs")
-    parser.add_argument("--self_trained_model", action="store_true", help="whether the model is trained by yourself. Setting this argument to True will change the model paths from model_path/element/*.pt to model_path/element/training_*/models/best_model.pt")
-    
-    args = parser.parse_args()
-    if args.name is None and args.low_level_QM_file is not None:
-        args.name = os.path.basename(args.low_level_QM_file).split('.')[0]
-    return args
-
-# model_path = f"/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/scripts/active_learning/7/{atom}"
-
-args = parse_args()  
 
 if args.input_folder is None and args.low_level_QM_file is None:
     raise ValueError("Please provide either input_folder or low_level_QM_file")
