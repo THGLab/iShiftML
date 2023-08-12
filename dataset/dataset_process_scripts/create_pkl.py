@@ -7,12 +7,11 @@ import pickle
 from tqdm import tqdm
 
 ##### SHOULD CHECK THESE BEFORE RUNNING #####
-save_addr = "processed_data"
+
+save_addr = "../local" 
+sample_xyz_folder = "../sampled_xyzs"
 n_atoms = [7]
 level_of_theory = "composite_high"
-
-# with open("7_atoms/selection.txt") as f:
-#     selector=f.read().split()
 
 
 ############################################

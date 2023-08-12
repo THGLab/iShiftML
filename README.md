@@ -102,7 +102,7 @@ Please first make sure data has been prepared. Refer to `iShiftML/dataset/README
 `iShiftML/scripts/hparam_tuning` has necessary code for doing hyperparameter tuning using the NNI package. If you want to do your own hyperparameter tuning, first install NNI according to https://github.com/microsoft/nni, and then run `nni_tuner.py` to start the tuning process. Make sure you have checked the `config.yml` file and changed all data paths.
 
 ### Training models
-The entrance script for training models is `iShiftML/scripts/active_learning/run_attention_aev.py`, which will train a model using parameters and dataset specified in `config.yml`. You can change the settings in `config.yml` to fit your own needs. Check comments in the `config.yml` to understand its usage.
+The entrance script for training models is `iShiftML/scripts/active_learning/run_attention_aev.py` or `iShiftML/scripts/active_learning/run_attention_tev.py` (requiring tev.hdf5 prepared), which will train a model using parameters and dataset specified in `config.yml`. You can change the settings in `config.yml` to fit your own needs. Check comments in the `config.yml` to understand its usage.
 
 
 ## Development guidelines

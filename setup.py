@@ -12,11 +12,9 @@ if __name__ == "__main__":
     setuptools.setup(
         name='nmrpred',
         version=nmrpred.__version__,
-        author='Jie Li',
-        author_email='jerry-li1996@berkeley.edu',
-        project_urls={
-            'Source': 'https://github.com/THGLab/iShiftML',
-        },
+        author='Jie Li and Jiashu Liang',
+        author_email='jerry-li1996@berkeley.edu, jsliang@berkeley.edu',
+        url='https://github.com/THGLab/iShiftML',
         description=
         "Highly Accurate Prediction of NMR Chemical Shifts from Low-Level Quantum Mechanics Calculations Using Machine Learning",
         long_description=long_description,

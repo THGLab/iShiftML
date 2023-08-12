@@ -1,5 +1,5 @@
 '''
-Script for generating the hdf5 file for storing the embedded NMR tensors, which are converted from the wB97X-V_pcSseg-1.pkl file
+Script for generating the hdf5 file for storing TEV vectors (the embedded NMR tensors), which are converted from the wB97X-V_pcSseg-1.pkl file in the same folder
 '''
 
 import subprocess
@@ -8,15 +8,16 @@ from tqdm import tqdm
 import pickle
 import h5py
 import multiprocessing
-
-import sys
-sys.path.append('/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/utils')
-from rotinv_98 import TEV_generator
+from nmrpred.utils.rotinv import TEV_generator
 
 TEV_generator = TEV_generator()
 atom_type_mapping={"H":"1","C":"6","N":"7","O":"8"}
 
-data_addr = "/global/cscratch1/sd/jerryli/" 
+##### SHOULD CHECK THESE BEFORE RUNNING #####
+
+data_addr = "../local" 
+
+############################################
 
 def process_single_file(inputs):
     try:

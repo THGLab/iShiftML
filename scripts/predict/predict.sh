@@ -1,5 +1,5 @@
 example_path="../../examples"
-modelpath = 'iShiftML/models/TEV'
+modelpath='iShiftML/models/TEV'
 element="C"
 mkdir local
 

@@ -1,0 +1,3 @@
+These files are the scripts to calculate Tensor Environment Variables (TEV) of each atom, just like AEVs. These TEVs are calculated from the NMR shielding diamagnetic (DIA) and paramagnetic (PARA) tensors. Since AEVs are rotational-invariant, we only need to let TEVs be rotational-invariant to keep our model rotational-invariant. 
+
+We tried many different methods to generate TEVs and found TEVs with dim = 98 or 194 work the best. Then we put rotinv_98.py in nmrpred/utils/ as our default TEV generation method.

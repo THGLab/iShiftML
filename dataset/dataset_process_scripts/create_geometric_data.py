@@ -6,21 +6,28 @@ including all the aev vectors, all coordinate vectors and atom types
 import subprocess
 import numpy as np
 from tqdm import tqdm
-import os
 import pickle
 from ase import io
 import h5py
 import sys
 import multiprocessing
 
+from os import path
+import nmrpred
+aev_binary_path = path.join( path.abspath(path.dirname(nmrpred.__file__)), 'utils', 'xyz_to_aev')
+
 atom_type_mapping={"H":"1","C":"6","N":"7","O":"8"}
 
-#save_addr = "processed_data"
-save_addr = "/global/cscratch1/sd/jerryli/" 
-max_atoms = 8
-sample_xyz_folder = "./"
+##### SHOULD CHECK THESE BEFORE RUNNING #####
 
-def get_aev(xyz_file, temp_name, aev_binary="./xyz_to_aev"):
+save_addr = "../local" 
+max_atoms = 8
+sample_xyz_folder = "../sampled_xyzs"
+
+############################################
+
+
+def get_aev(xyz_file, temp_name, aev_binary=aev_binary_path):
     with open(xyz_file) as f1:
         with open(temp_name + ".xyz","w") as f2:
             f2.write(f1.readline())

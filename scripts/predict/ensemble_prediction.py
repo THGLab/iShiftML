@@ -4,7 +4,7 @@ def parse_args():
     parser.add_argument("--low_level_QM_file", default=None, help="the low level QM calculation organized in csv format. This is to predict single molecule")
     parser.add_argument("--xyz_file", default=None, help="The xyz file for the molecule. Not needed if low_level_QM_file contains xyz info")
     parser.add_argument('-e', "--element", default="C", help="The element to predict")
-    parser.add_argument("--model_path", help="The path to the models folder", type=str, default="/global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/scripts/active_learning/7")
+    parser.add_argument("--model_path", help="The path to the models folder", type=str, default="../../models/TEV")
     parser.add_argument("--low_level_theory", default="wB97X-V_pcSseg-1")
     parser.add_argument("--target_level_theory", default="composite_high")
     parser.add_argument("--name", default=None, help="Name of data. When not provided, infer from necessary input file names")
