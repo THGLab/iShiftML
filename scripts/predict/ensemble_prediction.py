@@ -1,4 +1,21 @@
 import argparse
+import os,sys
+
+import numpy as np
+import torch
+from torch.optim import Adam
+from functools import partial
+from glob import glob
+import pandas as pd
+
+from nmrpred.layers import swish, shifted_softplus
+from nmrpred.data.nmr_data import NMRData, default_data_filter
+from nmrpred.data.loader import batch_dataset_converter
+from nmrpred.train import Trainer
+
+from functools import partial
+from tqdm import tqdm
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--low_level_QM_file", default=None, help="the low level QM calculation organized in csv format. This is to predict single molecule")
@@ -27,24 +44,6 @@ def parse_args():
     return args
 
 args = parse_args()  
-
-
-import os
-import sys
-import numpy as np
-import torch
-from torch.optim import Adam
-from functools import partial
-from glob import glob
-import pandas as pd
-
-from nmrpred.layers import swish, shifted_softplus
-from nmrpred.data.nmr_data import NMRData, default_data_filter
-from nmrpred.data.loader import batch_dataset_converter
-from nmrpred.train import Trainer
-
-from functools import partial
-from tqdm import tqdm
 
 
 if args.input_folder is None and args.low_level_QM_file is None:

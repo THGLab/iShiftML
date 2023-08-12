@@ -12,7 +12,7 @@ from ase import io
 import h5py
 import argparse
 import nmrpred
-from nmrpred.utils.rotinv import TEV_generator
+from nmrpred.utils import rotinv
 
 aev_binary_path = os.path.join( os.path.abspath(os.path.dirname(nmrpred.__file__)), 'utils', 'xyz_to_aev')
 
@@ -116,7 +116,7 @@ def prepare_data(low_level_QM_file, low_level_theory, without_tev = False, xyz_f
     df = pd.read_csv(low_level_QM_file)
     # Write Tensor environment variables
     if not without_tev:
-        TEV_generator = TEV_generator()
+        TEV_generator = rotinv.TEV_generator()
         tev = TEV_generator.generate_TEVs(df)
         tev_h5_handle = h5py.File(os.path.join(save_folder, "tev.hdf5"), "w")
         tev_h5_handle.create_dataset(name, data=tev[needed_indices])
