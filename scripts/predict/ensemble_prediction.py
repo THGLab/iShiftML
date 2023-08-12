@@ -45,32 +45,72 @@ def parse_args():
 
 args = parse_args()  
 
+### Check and process inputs ###
 
+# Check input is from input_folder or single molecule.
 if args.input_folder is None and args.low_level_QM_file is None:
     raise ValueError("Please provide either input_folder or low_level_QM_file")
 if args.input_folder is not None and args.low_level_QM_file is not None:
     raise ValueError("Please provide either input_folder or low_level_QM_file, not both") 
 
 if args.input_folder is not None:
+    #  If from input_folder, check if input_folder is valid
     data_path = args.input_folder
+    if not os.path.exists(data_path):
+        raise ValueError("Please provide a valid input_folder")
+    #  Check if aev.hdf5, atomic.pkl, args.low_level_theory.pkl are in input_folder
+    if not os.path.exists(os.path.join(data_path, "aev.hdf5")):
+        raise ValueError("There is no aev.hdf5 in the input_folder.")
+    if not os.path.exists(os.path.join(data_path, "atomic.pkl")):
+        raise ValueError("There is no atomic.pkl in the input_folder.")
+    if not os.path.exists(os.path.join(data_path, args.low_level_theory+".pkl")):
+        raise ValueError("There is no "+args.low_level_theory+".pkl in the input_folder.")
+    #If without_tev is False, check if tev.hdf5 is in input_folder
+    if not args.without_tev:
+        if not os.path.exists(os.path.join(data_path, "tev.hdf5")):
+            raise ValueError("There is no tev.hdf5 in the input_folder. Please set --without_tev to True if you are using original model or data_aug model.")
+    #  Check if split_file is provided
     if args.split_file is None:
         data_split_file = os.path.join(args.input_folder, "predict_data.txt")
     else:
         data_split_file = args.split_file
+    if not os.path.exists(data_split_file):
+        raise ValueError("Please provide a valid split_file. The default path is input_folder/predict_data.txt")
+    
 else:
-    ### Now preparing the data
+    #If from single molecule, prepare data
+    if not os.path.exists(args.low_level_QM_file):
+        raise ValueError("Please provide a valid low_level_QM_file")
     from prepare_data import prepare_data
     prepare_data(args.low_level_QM_file, args.low_level_theory, xyz_file=args.xyz_file, without_tev= args.without_tev, save_folder=args.scratch_folder, name=args.name, prediction_index=None)
     data_split_file = os.path.join(args.scratch_folder, "predict_data.txt")
     data_path=args.scratch_folder
     #Finish preparing data
 
+#If has_target is True, check if args.target_level_theory.pkl is provided in data_path
+if args.has_target:
+    if not os.path.exists(os.path.join(data_path, args.target_level_theory+".pkl")):
+        raise ValueError("There is no "+args.target_level_theory+".pkl in the input_folder.")
+
+# Check the model path is valid
+atom = args.element
+model_path = os.path.join(args.model_path, atom)
+if not os.path.exists(args.model_path):
+    raise ValueError("Please provide a valid model_path. The default path is ../../models/TEV")
+if not os.path.exists(model_path):
+    raise ValueError("Please provide a valid model_path of specified element. The default path is ../../models/TEV/element")
+
+#if its a self trained model, change the model path
+model_star_path = os.path.join(model_path, "*.pt")
+if args.self_trained_model:
+    model_star_path = os.path.join(model_path, "training_*/models/best_model.pt")
+
+
+### Check and process inputs ###
 
 torch.set_default_tensor_type(torch.FloatTensor)
 ATOM_MAP = {"H": 1, "C": 6, "N": 7, "O": 8}
 
-atom = args.element
-model_path = os.path.join(args.model_path, atom)
 output_path = args.output_folder
 if not os.path.exists(output_path):
     os.makedirs(output_path, exist_ok=True)
@@ -110,9 +150,6 @@ for category in test_data_categories:
                                 
 ensemble_models = []
 # normalizers = []
-model_star_path = os.path.join(model_path, "*.pt")
-if args.self_trained_model:
-    model_star_path = os.path.join(model_path, "training_*/models/best_model.pt")
     
 for model_file in glob(model_star_path):
     model = torch.load(model_file, map_location=torch.device(args.device))
