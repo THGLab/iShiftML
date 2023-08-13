@@ -1,12 +1,12 @@
 general:
   me: config.yml
-  device: cuda:0
+  device: cpu
   driver: run.py
   output: [H/ , 0] # Output folder of the model. The model will be saved in root/iter. If it's occupied, iter will be increased by 1 until it's not occupied.
-  seed: 5 # random seed
+  seed: 10 # random seed
 
 data:
-  root: ../../dataset/local   # input folder of data
+  root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
   # all options: B97-D_pcS-1, B97M-V_pcSseg-1, composite_middle, SCAN_pcSseg-1, wB97X-V_pcSseg-1
   input_lot: wB97X-V_pcSseg-1 # input level of theory
   target_lot: composite_high  # target level of theory
@@ -19,16 +19,15 @@ model:
 
 training:
   allow_preempt: False # if True, the training will be resumed from the last checkpoint of the same output folder (root/iter/max_subiter), max_subiter is the maximum subiter of resumed trainings
-  epochs: 1500 # total number of epochs
-  batch_size: 32 
-  lr: 0.01 # initial learning rate
+  epochs: 750 # total number of epochs
+  batch_size: 128 
+  lr: 1.0e-3 # initial learning rate
   # plateau : when validation error does not decrease in 20 epochs, decrease learning rate to 70%,
   # unless learning rate is smaller than 1e-6
   lr_scheduler: [plateau, 20, 20, 0.4, 1.0e-6]
-  weight_decay: 1.0e-4
+  weight_decay: 3.0e-5
   dropout: 0.1
-  momentum: 0.3
-  random_rotation: True
+  random_rotation: False # Whether to rotate the molecules by a random angle in each batch. Set true to train data augmentation model
 
 checkpoint:
   log: 1 # print log every 1 epoch
