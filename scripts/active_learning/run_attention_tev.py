@@ -41,7 +41,7 @@ else:
 # data
 data_collection = NMRData([settings['data']['input_lot'], settings['data']['target_lot']], data_path=settings['data']['root'], with_tev=True)
 # Check if the data is already split by checking if the splitting is a string
-if type(settings['data']['splitting']) is str:
+if isinstance(settings['data']['splitting'], str):
     data_collection.read_data_splitting(settings['data']['splitting'])
 else:
     # If the splitting is not a string, then it is a list of proportions
