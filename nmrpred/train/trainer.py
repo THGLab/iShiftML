@@ -37,7 +37,6 @@ class Trainer:
                  checkpoint_log=1,
                  checkpoint_val=1,
                  checkpoint_test=20,
-                 checkpoint_model=1,
                  verbose=False,
                  training=True,
                  hooks=None,
@@ -83,7 +82,6 @@ class Trainer:
         self.check_log = checkpoint_log
         self.check_val = checkpoint_val
         self.check_test = checkpoint_test
-        self.check_model = checkpoint_model
 
         # checkpoints
         self.epoch = 0  # number of epochs of any steps that model has gone through so far

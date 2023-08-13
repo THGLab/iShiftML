@@ -15,8 +15,8 @@ atom_type_mapping={"H":"1","C":"6","N":"7","O":"8"}
 
 ##### SHOULD CHECK THESE BEFORE RUNNING #####
 
-data_addr = "../local" 
-
+data_addr = "../local/" 
+## You need to change more than these (let's change the codes below) if your file structure is different
 ############################################
 
 def process_single_file(inputs):

@@ -13,7 +13,7 @@ sample_xyz_folder = "../sampled_xyzs"
 n_atoms = [7]
 level_of_theory = "composite_high"
 
-
+## You need to change more than these (let's change the codes below) if your file structure is different
 ############################################
     
 data = {}

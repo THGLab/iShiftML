@@ -9,7 +9,7 @@ from tqdm import tqdm
 import pickle
 from ase import io
 import h5py
-import sys
+import sys, os
 import multiprocessing
 
 from os import path
@@ -19,11 +19,11 @@ aev_binary_path = path.join( path.abspath(path.dirname(nmrpred.__file__)), 'util
 atom_type_mapping={"H":"1","C":"6","N":"7","O":"8"}
 
 ##### SHOULD CHECK THESE BEFORE RUNNING #####
-
 save_addr = "../local" 
 max_atoms = 8
-sample_xyz_folder = "../sampled_xyzs"
+sample_xyz_folder = "../sampled_xyzs/"
 
+## You need to change more than these (let's change the codes below) if your file structure is different
 ############################################
 
 
@@ -61,6 +61,8 @@ def process_single_file(inputs):
         return None
 
 if __name__ == '__main__':
+    if not path.exists(save_addr):
+        os.makedirs(save_addr)
     aev_h5_handle = h5py.File(save_addr + "/aev.hdf5", "w")
 
     current_keys = aev_h5_handle.keys()

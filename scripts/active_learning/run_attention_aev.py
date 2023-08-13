@@ -44,7 +44,6 @@ generators = data_collection.get_data_generator(atom=settings['data']['shift_typ
                                 input_level=settings['data']['input_lot'],
                                 tensor_level=settings['data']['input_lot'],
                                 target_level=settings['data']['target_lot'],
-                                combine_efs_solip=settings['data']['combine_efs_solip'],
                                 splitting=list(data_collection.splits),
                                 batch_size=settings['training']['batch_size'],
                                 collate_fn=partial(batch_dataset_converter, device=device[0]),
@@ -58,15 +57,15 @@ print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shif
 # model
 
 dropout = settings['training']['dropout']
-network_dim = settings['model']['network_dim']
-feature_extractor = AEVMLP([384, 128, network_dim], dropout)
+AEV_outdim = settings['model']['AEV_outdim']
+feature_extractor = AEVMLP([384, 128, AEV_outdim], dropout)
 if settings['data'].get("combine_efs_solip", True):
-    attention_input_dim = network_dim + 18
+    attention_input_dim = AEV_outdim + 18
     attention_output_dim = 19
 else:
-    attention_input_dim = network_dim + 27
+    attention_input_dim = AEV_outdim + 27
     attention_output_dim = 28
-attention_mask_network = AttentionMask([attention_input_dim, network_dim, attention_output_dim], dropout)
+attention_mask_network = AttentionMask([attention_input_dim, AEV_outdim, attention_output_dim], dropout)
 model = Attention(feature_extractor, attention_mask_network)
 
 
@@ -100,7 +99,6 @@ trainer = Trainer(model=model,
                   checkpoint_log=settings['checkpoint']['log'],
                   checkpoint_val=settings['checkpoint']['val'],
                   checkpoint_test=settings['checkpoint']['test'],
-                  checkpoint_model=settings['checkpoint']['model'],
                   verbose=settings['checkpoint']['verbose'],
                   preempt=settings['training']['allow_preempt'],
                   test_names=test_names)

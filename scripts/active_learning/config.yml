@@ -2,30 +2,26 @@ general:
   me: config.yml
   device: cuda:0
   driver: run.py
-  output: [H/ , 0] # root, iter
-  seed: 5
+  output: [H/ , 0] # Output folder of the model. The model will be saved in root/iter. If it's occupied, iter will be increased by 1 until it's not occupied.
+  seed: 5 # random seed
 
 data:
-  root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
+  root: ../../dataset/local   # input folder of data
   # all options: B97-D_pcS-1, B97M-V_pcSseg-1, composite_middle, SCAN_pcSseg-1, wB97X-V_pcSseg-1
-  input_lot: wB97X-V_pcSseg-1
-  target_lot: composite_high
-  shift_types: 1
-  combine_efs_solip: True
-  splitting: /global/cfs/cdirs/m2963/nmr_Composite/NMR_QM_jiashu/data_splits/1-7HA_0.txt
+  input_lot: wB97X-V_pcSseg-1 # input level of theory
+  target_lot: composite_high  # target level of theory
+  shift_types: 1 # atomic number of the element you want to predict. 1 for H, 6 for C, 7 for N, 8 for O
+  splitting: ../../data_splits/1-7HA_0.txt  # path to splitting file, which tells which molecules are in train, val, test set
 
 model:
-  network_dim: 128
+  AEV_outdim: 128 # output dimension of AEV in the first module
 
 training:
-  allow_preempt: False
-  epochs: 1500
-  batch_size: 32
-  resample: False
-  shuffle: True
-  drop_last: False
-  lr: 0.01
-  # when validation error does not decrease in 20 epochs, decrease learning rate to 70%,
+  allow_preempt: False # if True, the training will be resumed from the last checkpoint of the same output folder (root/iter/max_subiter), max_subiter is the maximum subiter of resumed trainings
+  epochs: 1500 # total number of epochs
+  batch_size: 32 
+  lr: 0.01 # initial learning rate
+  # plateau : when validation error does not decrease in 20 epochs, decrease learning rate to 70%,
   # unless learning rate is smaller than 1e-6
   lr_scheduler: [plateau, 20, 20, 0.4, 1.0e-6]
   weight_decay: 1.0e-4
@@ -34,8 +30,8 @@ training:
   random_rotation: True
 
 checkpoint:
-  log: 1
-  val: 1
-  test: 5
-  model: 50
+  log: 1 # print log every 1 epoch
+  val: 1 # evaluate validation error every 1 epoch
+  ##  model will be saved if the validation error is the lowest
+  test: 5 # To save time, the test error is evaluated only if the validation error is the lowest and there has passed 5 epochs since the last test error evaluation
   verbose: False

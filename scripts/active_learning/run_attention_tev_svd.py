@@ -46,7 +46,6 @@ generators = data_collection.get_data_generator(atom=settings['data']['shift_typ
                                 input_level=settings['data']['input_lot'],
                                 tensor_level=settings['data']['input_lot'],
                                 target_level=settings['data']['target_lot'],
-                                combine_efs_solip=settings['data']['combine_efs_solip'],
                                 splitting=list(data_collection.splits),
                                 batch_size=settings['training']['batch_size'],
                                 collate_fn=partial(batch_dataset_converter, device=device[0]))
@@ -57,7 +56,7 @@ print('normalizer: ', data_collection.get_normalizer(atom=settings['data']['shif
 # print('target hash:', data_collection.hash)
 
 # model
-AEV_output_dim = 128
+AEV_output_dim = settings['model']['AEV_outdim']
 dropout = settings['training']['dropout']
 feature_extractor = AEVMLP([384, 128, AEV_output_dim], dropout)
 with_low_level_inputs = settings['model'].get('with_low_level_inputs', False)
@@ -103,7 +102,6 @@ trainer = Trainer(model=model,
                   checkpoint_log=settings['checkpoint']['log'],
                   checkpoint_val=settings['checkpoint']['val'],
                   checkpoint_test=settings['checkpoint']['test'],
-                  checkpoint_model=settings['checkpoint']['model'],
                   verbose=settings['checkpoint']['verbose'],
                   preempt=settings['training']['allow_preempt'],
                   test_names=test_names)
