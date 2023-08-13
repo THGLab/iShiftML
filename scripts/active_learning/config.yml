@@ -12,6 +12,7 @@ data:
   target_lot: composite_high  # target level of theory
   shift_types: 1 # atomic number of the element you want to predict. 1 for H, 6 for C, 7 for N, 8 for O
   splitting: ../../data_splits/1-7HA_0.txt  # path to splitting file, which tells which molecules are in train, val, test set
+             # [0.8, 0.1, 0.1] # if splitting file is not provided, you can specify the ratio of train, val, test set in a list of 3 numbers  
 
 model:
   AEV_outdim: 128 # output dimension of AEV in the first module
