@@ -1,12 +1,12 @@
 general:
   me: config.yml
-  device: cpu
-  driver: run.py
+  device: cuda:0
+  driver: run_attention_tev.py
   output: [H/ , 0] # Output folder of the model. The model will be saved in root/iter. If it's occupied, iter will be increased by 1 until it's not occupied.
   seed: 10 # random seed
 
 data:
-  root: /global/cfs/cdirs/m2963/nmr_Composite/samples/processed_data_jiashu
+  root: ../../dataset/local
   # all options: B97-D_pcS-1, B97M-V_pcSseg-1, composite_middle, SCAN_pcSseg-1, wB97X-V_pcSseg-1
   input_lot: wB97X-V_pcSseg-1 # input level of theory
   target_lot: composite_high  # target level of theory

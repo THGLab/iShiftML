@@ -16,10 +16,11 @@ Please install (or load) conda and then proceed with the following commands:
 
     conda create --name iShiftML python=3.8
     conda activate iShiftML
-    conda install -c conda-forge numpy scipy pandas pyyaml scikit-learn ase
-    conda install -c pytorch pytorch cudatoolkit=10.1 
+    conda install -c conda-forge scipy pandas pyyaml scikit-learn ase
+    conda install numpy=1.21
+    conda install pytorch-cuda=11.7  pytorch=2.0.1=py3.8_cuda11.7_cudnn8.5.0_0 -c pytorch -c nvidia
     pip install tqdm tensorboard h5py==2.10
-    
+     
 The developer installation is available and for that you need to first clone iShiftML from this repository:
 
     git clone https://github.com/THGLab/iShiftML.git
