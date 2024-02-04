@@ -23,7 +23,7 @@ When the dataset preparation is complete, you should have the following files un
 - `tev.hdf5` if needed 
 
 ## Dataset splits and indices
-All data subsampled from ANI-1 that passes the stability check are in `DS-SS.txt`, which has 94,639 molecules in total. The active-learning selected data are in `DS-SS.txt`, which contains 12,677 molecules up to 4 heavy atoms, 1500 molecules with 5 heavy atoms, 1498 molecules with 6 heavy atoms, 1503 molecules with 7 heavy atoms, and 82 molecules with 8 heavy atoms.
+All data subsampled from ANI-1 that passes the stability check are in `DS-SS.txt`, which has 94,637 molecules in total. The active-learning selected data are in `DS-SS.txt`, which contains 12,677 molecules up to 4 heavy atoms, 1500 molecules with 5 heavy atoms, 1498 molecules with 6 heavy atoms, 1503 molecules with 7 heavy atoms, and 80 molecules with 8 heavy atoms.
 
 The active learning and ensemble data splittings can be found under `data_splits`.
 
