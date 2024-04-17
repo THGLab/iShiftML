@@ -14,12 +14,14 @@
 We recommend using conda environment to install dependencies of this library.
 Please install (or load) conda and then proceed with the following commands:
 
-    conda create --name iShiftML python=3.8
+    conda create --name iShiftML python=3.11
     conda activate iShiftML
-    conda install -c conda-forge scipy pandas pyyaml scikit-learn ase
-    conda install numpy=1.21
-    conda install pytorch-cuda=11.7  pytorch=2.0.1=py3.8_cuda11.7_cudnn8.5.0_0 -c pytorch -c nvidia
-    pip install tqdm tensorboard h5py==2.10
+    conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=12.1 -c pytorch -c nvidia -y
+    pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+    pip install torch_geometric  
+    pip install ase wandb lmdb
+    conda install -c conda-forge scipy pandas pyyaml scikit-learn ase matplotlib numpy -y
+    pip install tqdm tensorboard h5py
      
 The developer installation is available and for that you need to first clone iShiftML from this repository:
 
